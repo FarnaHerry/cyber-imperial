@@ -15,7 +15,7 @@ import { pageFromHash, type PageKey } from './core/navigation'
 import { memorialEdict, type Memorial } from './core/memorial'
 
 const studio = useStudio()
-const { state, restored, saveStatus } = studio
+const { state, restored } = studio
 const page = ref<PageKey>(pageFromHash(window.location.hash))
 const studioPage = ref<InstanceType<typeof StudioPage> | null>(null)
 const exportScale = ref<2 | 4>(2)
@@ -57,7 +57,7 @@ onBeforeUnmount(() => { window.removeEventListener('hashchange', onPageChange); 
 </script>
 
 <template>
-  <AppLayout :page="page" :theme="state.theme" :save-status="saveStatus" @toggle-theme="state.theme = state.theme === 'dark' ? 'light' : 'dark'">
+  <AppLayout :page="page" :theme="state.theme" @toggle-theme="state.theme = state.theme === 'dark' ? 'light' : 'dark'">
     <template #actions>
       <div v-if="page === 'studio'" class="export-control">
         <select v-model="exportScale" aria-label="导出分辨率"><option :value="2">2× 高清</option><option :value="4">4× 超清</option></select>

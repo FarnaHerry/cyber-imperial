@@ -12,7 +12,7 @@ import type { Point } from '../core/types'
 const props = defineProps<{
   text: string; revealKey: number; ink: string; force: number; erosion: number
   sealSize: number; sealText: string; ghost: Point | null; paper: PaperKey; stamps: Stamp[]
-  sealFont: string; edictFont: string; sealAngle: number; kingdom: string; emperor: string
+  sealFont: string; edictFont: string; sealAngle: number
   folded: boolean
 }>()
 const emit = defineEmits<{ stamp: [Point]; overflow: [boolean]; unfold: [] }>()
@@ -52,15 +52,6 @@ function paint(ctx: CanvasRenderingContext2D, scale: number, now: number, export
   ctx.clearRect(0, 0, W, H)
   ctx.drawImage(renderPaper(props.paper), 0, 0)
   const theme = PAPERS.find(p => p.key === props.paper) ?? PAPERS[0]
-  ctx.fillStyle = theme.text
-  ctx.textAlign = 'left'
-  ctx.font = '11px serif'
-  ctx.globalAlpha = .55
-  ctx.fillText(`CYBER IMPERIAL  /  ${props.kingdom.trim() || '赛博'}御制`, 80, 94)
-  ctx.fillText('受命于天 · 既寿永昌', 80, 716)
-  ctx.textAlign = 'right'
-  ctx.fillText(`${props.kingdom.trim() || '赛博'}皇帝${props.emperor.trim() ? ` · ${props.emperor.trim()}` : ''}御笔`, W - 80, 716)
-  ctx.globalAlpha = 1
   ctx.font = `48px ${fontFamily(props.edictFont)}`
   ctx.textAlign = 'center'
   Array.from('奉天承運').forEach((ch, i) => ctx.fillText(ch, 1110, 158 + i * 58))
@@ -173,7 +164,7 @@ watch(() => props.stamps, (next, previous) => {
   for (const id of births.keys()) if (!live.has(id)) births.delete(id)
   invalidate()
 })
-watch(() => [props.ink, props.force, props.erosion, props.sealSize, props.sealText, props.ghost, props.paper, props.sealFont, props.edictFont, props.sealAngle, props.kingdom, props.emperor, localGhost.value], invalidate, { deep: true })
+watch(() => [props.ink, props.force, props.erosion, props.sealSize, props.sealText, props.ghost, props.paper, props.sealFont, props.edictFont, props.sealAngle, localGhost.value], invalidate, { deep: true })
 onMounted(() => {
   mounted = true
   motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -202,8 +193,7 @@ defineExpose({ toCanvas, signature, download })
     <div class="scroll-roller roller-left" aria-hidden="true"><span class="roller-silk" /></div>
     <div class="scroll-roller roller-right" aria-hidden="true"><span class="roller-silk" /></div>
     <button class="scroll-binding" :tabindex="folded ? 0 : -1" :aria-hidden="!folded" :disabled="!folded || rolling" aria-label="点击卷轴展开圣旨" aria-controls="edict-scroll" @click="emit('unfold')"><span class="binding-title">御制圣旨</span><span class="binding-seal">御</span></button>
-    <p class="scroll-hint" :aria-hidden="!folded">点击卷轴 · 展读圣旨</p>
-  </div>
+    </div>
 </template>
 
 <style scoped>
@@ -228,11 +218,9 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .scroll-binding:disabled { opacity: 1; }
 .binding-title { writing-mode: vertical-rl; letter-spacing: 5px; font: 18px var(--font-serif); }
 .binding-seal { display: grid; place-items: center; width: 24px; height: 24px; color: #a83827; border: 1px solid currentColor; font: 17px var(--font-serif); }
-.scroll-hint { position: absolute; top: calc(100% + 18px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10px; letter-spacing: 2px; color: var(--muted); margin: 0; opacity: 0; transition: opacity 200ms; pointer-events: none; }
-.folded .scroll-hint { opacity: 1; transition-delay: 480ms; }
 .night-scroll .scroll-binding { background: linear-gradient(90deg, #283328, #485440 45%, #252e27); color: #ddc996; }
 .night-scroll .binding-seal { color: #d6b47a; }
 @keyframes turn-silk { 0% { background-size: 100% 100%; } 50% { background-size: 180% 100%; } 100% { background-size: 100% 100%; } }
-@media (max-width: 700px) { .document { --roll-width: 16px; }.scroll-binding { top: 22%; height: 56%; gap: 8px; }.binding-title { font-size: 14px; letter-spacing: 3px; }.binding-seal { width: 20px; height: 20px; font-size: 14px; }.scroll-hint { top: calc(100% + 10px); font-size: 9px; letter-spacing: 1.5px; } }
-@media (prefers-reduced-motion: reduce) { .scroll-paper, .scroll-roller, .scroll-binding, .scroll-hint { transition: none; }.roller-silk { animation: none !important; } }
+@media (max-width: 700px) { .document { --roll-width: 16px; }.scroll-binding { top: 22%; height: 56%; gap: 8px; }.binding-title { font-size: 14px; letter-spacing: 3px; }.binding-seal { width: 20px; height: 20px; font-size: 14px; } }
+@media (prefers-reduced-motion: reduce) { .scroll-paper, .scroll-roller, .scroll-binding { transition: none; }.roller-silk { animation: none !important; } }
 </style>

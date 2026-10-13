@@ -129,18 +129,18 @@ defineExpose({ exportImage, resetTemplate })
 
       <section class="canvas-workspace" aria-label="作品预览">
         <div class="canvas-toolbar">
-          <div class="paper-picker" aria-label="纸张材质"><span class="toolbar-label">纸张</span><button v-for="paper in PAPERS" :key="paper.key" :class="{ active: state.paper === paper.key }" :aria-pressed="state.paper === paper.key" @click="state.paper = paper.key"><span :style="{ background: paper.color }" />{{ paper.label }}</button></div>
+          <div class="paper-picker" aria-label="纸张材质"><button v-for="paper in PAPERS" :key="paper.key" :class="{ active: state.paper === paper.key }" :aria-pressed="state.paper === paper.key" @click="state.paper = paper.key"><span :style="{ background: paper.color }" />{{ paper.label }}</button></div>
           <div class="scroll-tools"><button class="scroll-toggle" aria-controls="edict-scroll" :aria-expanded="!folded" @click="toggleScroll"><StudioIcon :name="folded ? 'unfold' : 'fold'" :size="15" />{{ folded ? '展开圣旨' : '收起圣旨' }}</button><button class="icon-button" :aria-label="focusMode ? '退出专注模式' : '专注模式'" :title="focusMode ? '退出专注模式 · Esc' : '专注模式'" :aria-pressed="focusMode" @click="focusMode = !focusMode"><StudioIcon :name="focusMode ? 'close' : 'expand'" :size="16" /></button></div>
         </div>
         <div class="canvas-surface">
-          <div class="paper-holder"><ImperialCanvas ref="stage" v-model:rolling="scrollMoving" :folded="folded" :text="state.text" :reveal-key="revealKey" :ink="ink.color" :force="state.force" :erosion="state.erosion" :seal-size="state.sealSize" :seal-text="sealText" :ghost="ghost" :paper="state.paper" :stamps="state.stamps" :seal-font="state.sealFont" :edict-font="state.edictFont" :seal-angle="state.sealAngle" :kingdom="state.kingdom" :emperor="state.emperor" @stamp="stampAt" @overflow="overflow = $event" @unfold="folded = false" /></div>
+          <div class="paper-holder"><ImperialCanvas ref="stage" v-model:rolling="scrollMoving" :folded="folded" :text="state.text" :reveal-key="revealKey" :ink="ink.color" :force="state.force" :erosion="state.erosion" :seal-size="state.sealSize" :seal-text="sealText" :ghost="ghost" :paper="state.paper" :stamps="state.stamps" :seal-font="state.sealFont" :edict-font="state.edictFont" :seal-angle="state.sealAngle" @stamp="stampAt" @overflow="overflow = $event" @unfold="folded = false" /></div>
         </div>
-        <div class="canvas-bottom"><div class="history-tools"><button class="icon-button" :disabled="!canUndo" aria-label="撤销" title="撤销 · Ctrl / ⌘ Z" @click="undo"><StudioIcon name="undo" :size="16" /></button><button class="icon-button" :disabled="!canRedo" aria-label="重做" title="重做 · Ctrl / ⌘ Shift Z" @click="redo"><StudioIcon name="redo" :size="16" /></button><span class="tool-divider" /><button class="text-button clear-button" :disabled="!state.stamps.length" @click="clear"><StudioIcon name="trash" :size="14" /> 清空印痕</button></div><span class="stamp-counter"><b>{{ String(state.stamps.length).padStart(2, '0') }}</b> 枚印痕 <span class="tool-divider" /> 1200 × 800</span></div>
+        <div class="canvas-bottom"><div class="history-tools"><button class="icon-button" :disabled="!canUndo" aria-label="撤销" title="撤销 · Ctrl / ⌘ Z" @click="undo"><StudioIcon name="undo" :size="16" /></button><button class="icon-button" :disabled="!canRedo" aria-label="重做" title="重做 · Ctrl / ⌘ Shift Z" @click="redo"><StudioIcon name="redo" :size="16" /></button><span class="tool-divider" /><button class="text-button clear-button" :disabled="!state.stamps.length" @click="clear"><StudioIcon name="trash" :size="14" /> 清空印痕</button></div></div>
       </section>
 
       <aside class="seal-panel side-panel" aria-label="玉玺设置">
         <div class="panel-heading"><span class="section-index">02</span><h2>琢一方玉玺</h2><span class="micro">SEAL</span></div>
-        <section class="seal-preview"><div class="seal-orbit"><span class="orbit-corner tl" /><span class="orbit-corner tr" /><span class="orbit-corner bl" /><span class="orbit-corner br" /><div ref="dockEl" class="seal-dock" /></div><span class="preview-name">{{ sealText === '受命于天既寿永昌' ? '传国玉玺' : '私人藏印' }}</span><span class="preview-instruction">拖动玉玺，亲手落印</span></section>
+        <section class="seal-preview"><div class="seal-orbit"><span class="orbit-corner tl" /><span class="orbit-corner tr" /><span class="orbit-corner bl" /><span class="orbit-corner br" /><div ref="dockEl" class="seal-dock" /></div><span class="preview-name">{{ sealText === '受命于天既寿永昌' ? '传国玉玺' : '私人藏印' }}</span></section>
         <section class="panel-section seal-settings">
           <label class="field-heading" for="seal-text"><span>印文</span><span>1–8 字 · 右起竖读</span></label><input id="seal-text" v-model="state.sealText" class="text-input seal-text-input" maxlength="8" placeholder="受命于天既寿永昌" />
           <div class="font-control"><label for="seal-font">玉玺字体</label><select id="seal-font" v-model="state.sealFont" class="font-select"><option v-if="missingFont(state.sealFont)" :value="state.sealFont" disabled>{{ fontLibraryReady ? '本地字体未能载入，请重新导入' : '正在载入本地字体…' }}</option><option v-for="font in FONT_OPTIONS" :key="font.key" :value="font.key">{{ font.label }}</option><option v-for="font in customFonts" :key="font.key" :value="font.key">{{ font.label }}</option></select><button class="text-button" :disabled="importing" @click="chooseFontFile('sealFont')">{{ importing ? '正在导入…' : '＋ 导入本地字体' }}</button><p v-if="state.sealFont === 'bird'" class="field-note">内置原创八字鸟虫篆风格印面。<template v-if="missingBirdChars.length">「{{ missingBirdChars.join('') }}」使用宋体补字，可切换或导入字体。</template></p></div>
@@ -195,7 +195,6 @@ defineExpose({ exportImage, resetTemplate })
 .canvas-workspace { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: radial-gradient(ellipse at 50% 50%, #29332a40, transparent 75%), var(--bg); }
 .canvas-toolbar { height: 61px; min-height: 61px; display: flex; justify-content: space-between; align-items: center; padding: 0 25px; border-bottom: 1px solid var(--line); }
 .paper-picker { display: flex; align-items: center; gap: 4px; }
-.toolbar-label { font-size: 10px; color: #8b998c; margin-right: 10px; }
 .paper-picker button { display: flex; align-items: center; gap: 6px; border: 1px solid transparent; border-radius: var(--radius); background: none; color: #8b998c; padding: 6px 10px; font-size: 10px; }
 .paper-picker button.active { background: #ffffff05; border-color: #ffffff10; color: #e2d9c4; }
 .paper-picker button:hover { color: var(--text); }
@@ -207,8 +206,6 @@ defineExpose({ exportImage, resetTemplate })
 .scroll-toggle:hover { border-color: var(--accent); }
 .canvas-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 51px; height: 51px; padding: 0 22px; border-top: 1px solid var(--line); }
 .history-tools { display: flex; align-items: center; gap: 4px; }
-.stamp-counter { font-size: 9px; color: #8d9987; white-space: nowrap; }
-.stamp-counter b { color: #cfcbbb; font: 14px var(--font-serif); margin-right: 4px; }
 .seal-preview { display: flex; flex-direction: column; align-items: center; padding: 22px 21px 17px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 4; }
 .seal-orbit { position: relative; width: 142px; height: 142px; display: grid; place-items: center; background: radial-gradient(circle, #d7b18d08, transparent 70%); }
 .seal-dock { width: 128px; height: 128px; }
@@ -218,7 +215,6 @@ defineExpose({ exportImage, resetTemplate })
 .orbit-corner.bl { bottom: 0; left: 0; border-right: 0; border-top: 0; }
 .orbit-corner.br { bottom: 0; right: 0; border-left: 0; border-top: 0; }
 .preview-name { font: 12px var(--font-serif); letter-spacing: 3px; margin-top: 15px; color: #d9d6c3; }
-.preview-instruction { font-size: 9px; color: #869380; margin-top: 7px; letter-spacing: .5px; }
 .seal-settings { padding-top: 21px; padding-bottom: 0; }
 .seal-text-input { font-family: var(--font-serif); letter-spacing: 2.5px; }
 .ink-heading { margin-top: 23px; }
@@ -277,17 +273,14 @@ defineExpose({ exportImage, resetTemplate })
 .canvas-toolbar { height: 51px; min-height: 51px; padding: 0 16px; }
 .scroll-tools { gap: 5px; }
 .scroll-toggle { padding: 6px; }
-.paper-picker .toolbar-label { display: none; }
 .paper-picker button { padding: 6px 5px; }
 .canvas-surface { padding: 25px 22px; }
 .canvas-bottom { padding: 0 14px; }
-.stamp-counter { font-size: 8px; }
 .seal-panel { order: 1; border: 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 140px minmax(0, 1fr); }
 .seal-panel .panel-heading { grid-column: 1/-1; }
 .seal-preview { border-bottom: 0; padding: 24px 0; align-self: start; }
 .seal-orbit { width: 126px; height: 132px; }
 .preview-name { font-size: 11px; }
-.preview-instruction { font-size: 8px; }
 .seal-settings { padding: 24px 21px 0 10px; }
 .seal-text-input { font-size: 10px; letter-spacing: 1px; padding: 10px; }
 .seal-actions { grid-column: 1/-1; padding: 22px; }
