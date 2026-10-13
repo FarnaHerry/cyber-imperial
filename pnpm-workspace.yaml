@@ -1,0 +1,5 @@
+# pnpm 12 把「允许执行哪些依赖的构建脚本」放在这里（pnpm 11 及以前是
+# package.json 里的 pnpm.onlyBuiltDependencies）。默认全部拦截。
+# esbuild 需要跑 postinstall 来就位它的原生二进制，所以放行。
+allowBuilds:
+  esbuild: true
