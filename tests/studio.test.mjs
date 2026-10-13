@@ -205,3 +205,91 @@ test('180 度旋转的占地与 0 度一致，45 度需要更大的边界', () =
   assert.ok(Math.abs(sealHalfExtent(148, 180) - sealHalfExtent(148, 0)) < 1e-9)
   assert.ok(sealHalfExtent(148, 45) > sealHalfExtent(148, 0))
 })
+
+const { RANKS, TREASURE_KINDS, warehouseOf, stockBalance, PALACE_PLAN } = await import(await compileFile(new URL('../src/core/empire.ts', import.meta.url)))
+
+test('文武共用十九档品级，正一品最高、从品低于同级正品、不入流最低', () => {
+  assert.equal(RANKS.length, 19)
+  assert.equal(RANKS[0].label, '正一品')
+  assert.equal(RANKS[1].label, '从一品')
+  assert.equal(RANKS[17].label, '从九品')
+  assert.equal(RANKS[18].label, '不入流')
+  assert.equal(new Set(RANKS.map(r => r.key)).size, 19)
+  for (let i = 0; i < 18; i += 2) {
+    assert.ok(RANKS[i].order < RANKS[i + 1].order)
+    assert.notEqual(RANKS[i].civil, RANKS[i].military)
+    assert.notEqual(RANKS[i + 1].civil, RANKS[i + 1].military)
+  }
+  assert.equal(RANKS[18].civil, '不入流小官')
+  assert.equal(RANKS[18].military, '不入流小官')
+})
+
+test('至宝专入皇室宝库；库存不允许超支、负数、小数或超过上限', () => {
+  for (const kind of TREASURE_KINDS) assert.equal(warehouseOf(kind), kind === '至宝' ? '皇室宝库' : '国库')
+  assert.equal(stockBalance(10, -10), 0)
+  assert.equal(stockBalance(10, 5), 15)
+  for (const [quantity, delta] of [[10, -11], [-1, 2], [10, .5], [NaN, 0], [1000000000, 1], [10, Infinity]]) assert.equal(stockBalance(quantity, delta), null)
+})
+
+test('3.0 草稿迁移后保留圣旨与印痕，补全双库、官制和宫殿图', () => {
+  storage.clear()
+  const first = mount()
+  first.studio.state.text = '旧朝圣旨'
+  first.studio.addStamp(stamp('migration'))
+  first.stop()
+  const old = JSON.parse(storage.get('cyber-imperial-studio:v2'))
+  old.version = 3
+  for (const key of ['treasures', 'stockRecords', 'officers', 'rankTitles', 'halls']) delete old.state[key]
+  storage.set('cyber-imperial-studio:v2', JSON.stringify(old))
+  const { studio, stop } = mount()
+  try {
+    assert.equal(studio.restored, true)
+    assert.equal(studio.state.text, '旧朝圣旨')
+    assert.equal(studio.state.stamps[0].id, 'migration')
+    assert.equal(Object.keys(studio.state.rankTitles).length, 19)
+    assert.equal(studio.state.halls.length, PALACE_PLAN.length)
+    assert.ok(studio.state.treasures.some(t => t.kind === '至宝'))
+    assert.equal(JSON.parse(storage.get('cyber-imperial-studio:v2')).version, 4)
+  } finally { stop() }
+})
+
+test('双库数量、出入库簿、文武职名与官员品级、殿名在刷新后恢复', () => {
+  storage.clear()
+  const first = mount(), s = first.studio.state
+  s.treasures[0].kind = '器物'; s.treasures[0].quantity = 12
+  s.rankTitles['1-cong'] = { civil: '内阁首辅', military: '镇国上将' }
+  s.officers[0].rank = '1-cong'; s.officers[0].role = 'military'
+  s.halls[0].name = '上林御苑'; s.halls[0].purpose = '游赏'
+  s.stockRecords = [{ id: 'stock-test', name: '库银', kind: '金银', delta: -10, unit: '两', at: new Date().toISOString(), reason: '调拨' }]
+  first.stop()
+  const { studio, stop } = mount()
+  try {
+    assert.equal(studio.state.treasures[0].quantity, 12)
+    assert.equal(warehouseOf(studio.state.treasures[0].kind), '国库')
+    assert.deepEqual(studio.state.rankTitles['1-cong'], { civil: '内阁首辅', military: '镇国上将' })
+    assert.equal(studio.state.officers[0].rank, '1-cong')
+    assert.equal(studio.state.officers[0].role, 'military')
+    assert.equal(studio.state.halls[0].name, '上林御苑')
+    assert.equal(studio.state.stockRecords[0].delta, -10)
+  } finally { stop() }
+})
+
+test('损坏的新领域单独恢复，不入流职名固定，既有圣旨不被清空', () => {
+  storage.clear()
+  const first = mount(); first.studio.state.text = '留下这道旨'; first.studio.addStamp(stamp('safe')); first.stop()
+  const data = JSON.parse(storage.get('cyber-imperial-studio:v2'))
+  data.state.treasures[0].quantity = -1
+  data.state.officers[0].rank = '10-zheng'
+  data.state.rankTitles.unranked = { civil: '太师', military: '大将军' }
+  data.state.halls[0].name = ''
+  storage.set('cyber-imperial-studio:v2', JSON.stringify(data))
+  const { studio, stop } = mount()
+  try {
+    assert.equal(studio.state.text, '留下这道旨')
+    assert.equal(studio.state.stamps[0].id, 'safe')
+    assert.ok(studio.state.treasures.every(t => t.quantity >= 0))
+    assert.ok(studio.state.officers.every(o => RANKS.some(r => r.key === o.rank)))
+    assert.equal(studio.state.rankTitles.unranked.civil, '不入流小官')
+    assert.ok(studio.state.halls[0].name)
+  } finally { stop() }
+})

@@ -85,7 +85,7 @@ onBeforeUnmount(() => clearTimeout(timer))
 
 <style scoped>
 .emperor-page { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 36px; padding: 34px max(32px, calc((100vw - 1320px) / 2)); align-items: start; }
-.palace-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; }
+.palace-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
 .royal-profile { padding: 28px; position: sticky; top: 0; display: flex; flex-direction: column; text-align: center; align-items: center; }
 .royal-emblem { position: relative; margin: 27px 0 15px; display: grid; place-items: center; width: 85px; height: 85px; color: var(--accent); font: 49px var(--font-serif); border: 1px solid #b59a7140; background: radial-gradient(ellipse, #c69f760e, transparent); }
 .royal-emblem::before { content: ''; position: absolute; inset: 5px; border: 1px solid #b59a7125; }
@@ -108,12 +108,12 @@ onBeforeUnmount(() => clearTimeout(timer))
 .repeat-setting { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .repeat-setting input { accent-color: #af9670; }
 .palace-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.palace-card { position: relative; display: flex; align-items: center; flex-direction: column; padding: 31px 14px 15px; background: var(--panel); border: 1px solid #b39d692d; border-radius: 5px; min-height: 235px; transition: border-color .3s, opacity .3s, background .3s; }
+.palace-card { position: relative; display: flex; align-items: center; flex-direction: column; padding: 31px 14px 15px; background: var(--panel); border: 1px solid #b39d692d; border-radius: var(--radius); min-height: 235px; transition: border-color .3s, opacity .3s, background .3s; }
 .palace-card.chosen { border-color: #d6b17c; background: #bd995a0f; box-shadow: 0 0 25px #d6b17c0c, inset 0 0 25px #d6b17c06; }
 .palace-card.inactive { opacity: .48; }
 .card-edit { position: absolute; right: 9px; top: 10px; font-size: 9px; color: var(--muted); padding: 3px 7px; border: 0; background: none; }
-.name-plaque { width: 100%; max-width: 150px; min-height: 159px; position: relative; display: flex; justify-content: center; align-items: center; gap: 12px; border: 1px solid #b49f644f; border-radius: 28px 28px 3px 3px; background: linear-gradient(160deg, #d1bd8610, transparent 65%); padding: 24px 15px 21px; }
-.name-plaque::after { content: ''; inset: 5px; position: absolute; border: 1px solid #b49f6425; border-radius: 23px 23px 1px 1px; pointer-events: none; }
+.name-plaque { width: 100%; max-width: 150px; min-height: 159px; position: relative; display: flex; justify-content: center; align-items: center; gap: 12px; border: 1px solid #b49f644f; border-radius: var(--radius); background: linear-gradient(160deg, #d1bd8610, transparent 65%); padding: 24px 15px 21px; }
+.name-plaque::after { content: ''; inset: 5px; position: absolute; border: 1px solid #b49f6425; border-radius: var(--radius); pointer-events: none; }
 .plaque-name { writing-mode: vertical-rl; font: 29px var(--font-serif); letter-spacing: 7px; color: var(--text); line-height: 1.2; overflow-wrap: anywhere; max-height: 260px; }
 .plaque-palace, .plaque-title { writing-mode: vertical-rl; font: 10px var(--font-serif); color: var(--accent); letter-spacing: 3px; overflow-wrap: anywhere; max-height: 260px; }
 .plaque-palace { opacity: .7; }
@@ -126,7 +126,7 @@ onBeforeUnmount(() => clearTimeout(timer))
 .flip-button { margin: 0 auto; background: #dec299; color: #34352b; min-height: 47px; min-width: 236px; font: 15px var(--font-serif); letter-spacing: 4px; gap: 25px; }
 .flip-button:hover:not(:disabled) { background: #edd8b7; }
 .flip-action p { font-size: 9px; color: var(--muted); letter-spacing: 1px; margin: 12px 0 0; }
-.flip-result { display: flex; justify-content: space-between; align-items: center; gap: 20px; border: 1px solid #c69f764d; background: #c69f7608; border-radius: 5px; padding: 20px 23px; margin: 0 0 22px; }
+.flip-result { display: flex; justify-content: space-between; align-items: center; gap: 20px; border: 1px solid #c69f764d; background: #c69f7608; border-radius: var(--radius); padding: 20px 23px; margin: 0 0 22px; }
 .flip-result p { font-size: 11px; color: var(--muted); margin-bottom: 0; line-height: 1.8; }
 .flip-result p strong { font: 17px var(--font-serif); color: var(--text); margin: 0 10px; }
 .flip-result p > span { color: var(--accent); }

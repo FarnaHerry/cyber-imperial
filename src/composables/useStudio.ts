@@ -5,6 +5,7 @@ import { PAPERS, type PaperKey } from '../core/paper'
 import type { Stamp } from '../core/stamp'
 import { isFontKey } from '../core/fonts'
 import { DEFAULT_MEMBERS, drawPalaceMember, royalEdict, type PalaceMember, type DrawRecord } from '../core/palace'
+import { restoreEmpire, type EmpireState } from '../core/empire'
 
 export const TEMPLATES = [
   { key: 'imperial', label: '敕封圣旨', hint: '奉天承运 · 加官进爵', mark: '诏', create: (who: string) => DEFAULT_EDICT.replace('今有卿', () => `今有${who || '卿'}`) },
@@ -13,7 +14,7 @@ export const TEMPLATES = [
   { key: 'blank', label: '自由创作', hint: '一纸素笺 · 自由落笔', mark: '书', create: () => '' },
 ] as const
 
-export interface StudioState {
+export interface StudioState extends EmpireState {
   text: string
   subject: string
   sealText: string
@@ -59,24 +60,25 @@ function readDraft(): Partial<StudioState> | null {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (!stored) return null
     const s = JSON.parse(stored)
-    if (![2, 3].includes(s?.version) || !s.state) return null
+    if (![2, 3, 4].includes(s?.version) || !s.state) return null
     const d = s.state
     if (!string(d.text, 1200) || !string(d.subject, 12) || !string(d.sealText, 8)
       || !INKS.some(i => i.key === d.inkKey) || !PAPERS.some(p => p.key === d.paper)
       || !finite(d.force, .15, 1) || !finite(d.erosion, 0, .92) || !finite(d.sealSize, 60, 260)
       || typeof d.sound !== 'boolean' || !Array.isArray(d.stamps) || d.stamps.length > 500 || !d.stamps.every(validStamp)) return null
-    if (s.version === 3 && (!['dark', 'light'].includes(d.theme) || !isFontKey(d.sealFont) || !isFontKey(d.edictFont)
+    if (s.version >= 3 && (!['dark', 'light'].includes(d.theme) || !isFontKey(d.sealFont) || !isFontKey(d.edictFont)
       || !finite(d.sealAngle, -180, 180) || !string(d.kingdom, 12) || !string(d.emperor, 12)
       || !Array.isArray(d.members) || d.members.length > 24 || !d.members.every(validMember)
       || new Set(d.members.map((m: PalaceMember) => m.id)).size !== d.members.length
       || !Array.isArray(d.draws) || d.draws.length > 50 || !d.draws.every(validDraw) || typeof d.avoidRepeat !== 'boolean')) return null
-    return { ...d, stamps: d.stamps.map((stamp: Stamp) => ({ ...stamp, font: stamp.font ?? 'serif' })) }
+    return { ...d, ...restoreEmpire(s.version === 4 ? d : undefined), stamps: d.stamps.map((stamp: Stamp) => ({ ...stamp, font: stamp.font ?? 'serif' })) }
   } catch { return null }
 }
 
 export function useStudio() {
   const draft = readDraft()
   const state = reactive<StudioState>({
+    ...restoreEmpire(draft),
     text: DEFAULT_EDICT, subject: '', sealText: '受命于天既寿永昌', inkKey: 'cinnabar',
     force: .76, erosion: .38, sealSize: 148, paper: 'parchment', sound: true, stamps: [], ...draft,
     theme: draft?.theme ?? 'dark', sealFont: draft?.sealFont ?? 'bird', edictFont: draft?.edictFont ?? 'brush',
@@ -127,7 +129,7 @@ export function useStudio() {
   let timer: ReturnType<typeof setTimeout> | undefined
   function save() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 3, state }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 4, state }))
       saveStatus.value = 'saved'
     } catch { saveStatus.value = 'unavailable' }
   }

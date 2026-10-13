@@ -210,7 +210,7 @@ defineExpose({ home })
 .halo {
   position: absolute;
   inset: 8%;
-  border-radius: 50%;
+  border-radius: var(--radius);
   background: radial-gradient(circle, currentColor 0%, transparent 68%);
   opacity: 0.16;
   filter: blur(18px);
@@ -231,7 +231,7 @@ defineExpose({ home })
   left: 50%;
   transform: translateX(-50%);
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
   background: rgba(6, 5, 10, 0.86);
   color: currentColor;
