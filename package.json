@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "赛博玉玺 —— 受命于天，既寿永昌",
+  "license": "MIT",
   "packageManager": "pnpm@12.11.2",
   "scripts": {
     "dev": "vite",
