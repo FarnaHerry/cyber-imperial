@@ -10,6 +10,7 @@ const help = computed(() => ({
   emperor: '设置国号与名讳，维护宫册，再随机翻牌。翻牌结果可送入工坊拟旨。',
   treasury: '至宝自动归入皇室宝库，其他藏品归入国库。编目可修改类别与数量；入库和出库都会记入库簿，出库不能超过库存。',
   officials: '品级从正一品、从一品依次降至从九品，另设不入流。文武共用顺序、分别设置职名。在官册中选择文武与品级，还可为官员拟任命旨。',
+  memorials: '具折人可从官册选取，也可手填。草稿上奏后进入待批队列，填写朱批并准奏、驳回或发回修改；发回的奏折可修订再奏，保留最近 20 次批阅记录。批复可送入工坊拟旨，库藏与官册由你另行办理。',
   palace: '点击地图建筑或宫阙名录，查看宫殿详情。题写名称与用途后保存，地图会同步更新。库藏与文武议事殿可直接前往相应页面。',
   studio: '',
 }[props.page]))
@@ -19,7 +20,7 @@ const saveLabel = computed(() => props.saveStatus === 'saved' ? '草稿已保存
 <template>
   <div class="app-layout">
     <header class="topbar">
-      <a class="brand" href="#studio" aria-label="赛博玉玺首页"><span class="brand-mark">玺</span><span class="brand-copy"><strong>赛博玉玺<span class="version">肆</span></strong><small>CYBER IMPERIAL SEAL</small></span></a>
+      <a class="brand" href="#studio" aria-label="赛博玉玺首页"><span class="brand-mark">玺</span><span class="brand-copy"><strong>赛博玉玺<span class="version">伍</span></strong><small>CYBER IMPERIAL</small></span></a>
       <nav class="page-nav" aria-label="页面导航"><a v-for="item in PAGES" :key="item.key" :href="`#${item.key}`" :aria-current="page === item.key ? 'page' : undefined">{{ item.label }}</a></nav>
       <div class="header-actions">
         <button class="icon-button help-button" aria-label="使用说明" title="使用说明" @click="helpDialog?.showModal()"><StudioIcon name="help" /></button>
@@ -69,7 +70,7 @@ const saveLabel = computed(() => props.saveStatus === 'saved' ? '草稿已保存
 .shortcut-hint { margin-left: auto; }
 }
 .page-nav { display: flex; align-items: center; gap: 6px; }
-.page-nav a { padding: 9px 12px; color: var(--muted); font-size: 12px; letter-spacing: 1px; text-decoration: none; border: 1px solid transparent; border-radius: var(--radius); white-space: nowrap; flex: none; }
+.page-nav a { padding: 9px 10px; color: var(--muted); font-size: 12px; letter-spacing: 1px; text-decoration: none; border: 1px solid transparent; border-radius: var(--radius); white-space: nowrap; flex: none; }
 .page-nav a[aria-current='page'] { color: var(--accent); background: #c69f760a; border-color: #c69f762f; }
 @media (max-width: 1100px) {
 .page-nav a { padding: 8px 12px; }

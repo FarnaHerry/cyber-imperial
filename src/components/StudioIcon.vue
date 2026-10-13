@@ -17,6 +17,8 @@ const paths: Record<string, string> = {
   help: 'M9 8a3 3 0 1 1 4 3c-1 1-1 1-1 3m0 3v.01M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',
   close: 'm6 6 12 12M6 18 18 6',
   expand: 'M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5',
+  fold: 'M3 4v16m18-16v16M6 12h4m-3-3 3 3-3 3m11-3h-4m3-3-3 3 3 3',
+  unfold: 'M3 4v16m18-16v16M10 12H6m3-3-3 3 3 3m5-3h4m-3-3 3 3-3 3',
 }
 const path = computed(() => paths[props.name] ?? paths.stamp)
 </script>

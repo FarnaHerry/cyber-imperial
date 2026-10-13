@@ -6,11 +6,13 @@ import EmperorPage from './pages/EmperorPage.vue'
 import TreasuryPage from './pages/TreasuryPage.vue'
 import OfficialsPage from './pages/OfficialsPage.vue'
 import PalaceMapPage from './pages/PalaceMapPage.vue'
+import MemorialPage from './pages/MemorialPage.vue'
 import StudioIcon from './components/StudioIcon.vue'
 import { useStudio } from './composables/useStudio'
 import { palaceEdict, royalEdict, type DrawRecord } from './core/palace'
 import { rankByKey, type Officer } from './core/empire'
 import { pageFromHash, type PageKey } from './core/navigation'
+import { memorialEdict, type Memorial } from './core/memorial'
 
 const studio = useStudio()
 const { state, restored, saveStatus } = studio
@@ -41,6 +43,14 @@ function fromOfficer(officer: Officer) {
   state.text = royalEdict(`奉天承运，赛博皇帝诏曰：今有${officer.name}，${officer.role === 'civil' ? '学识笃厚，勤于政事' : '忠勇果毅，善守山河'}。兹${officer.rank === 'unranked' ? '录为不入流小官' : `授${rankByKey(officer.rank).label}品级，任${title}之职`}。${officer.duty ? `命其${officer.duty}。` : ''}\n\n望卿恪尽职守，不负所托。钦此。`, state.kingdom, state.emperor)
   studioPage.value?.resetTemplate(); navigate('studio'); notify(`已为${officer.name}拟任命旨`)
 }
+function fromMemorial(memorial: Memorial) {
+  const text = memorialEdict(memorial)
+  if (!text) return
+  state.subject = memorial.author
+  state.text = royalEdict(text, state.kingdom, state.emperor)
+  studioPage.value?.resetTemplate()
+  navigate('studio'); notify('已将奏折批复送入工坊，原有印痕保留')
+}
 watch(() => state.theme, value => { document.documentElement.dataset.theme = value }, { immediate: true })
 onMounted(() => { window.addEventListener('hashchange', onPageChange); if (restored) notify('已恢复上次的作品，继续落笔吧') })
 onBeforeUnmount(() => { window.removeEventListener('hashchange', onPageChange); clearTimeout(toastTimer) })
@@ -58,6 +68,7 @@ onBeforeUnmount(() => { window.removeEventListener('hashchange', onPageChange); 
     <EmperorPage v-if="page === 'emperor'" :state="state" :flip="studio.flip" @edict="fromPalace" @studio="navigate('studio')" />
     <TreasuryPage v-else-if="page === 'treasury'" :state="state" @notice="notify" />
     <OfficialsPage v-else-if="page === 'officials'" :state="state" @notice="notify" @edict="fromOfficer" />
+    <MemorialPage v-else-if="page === 'memorials'" :state="state" @notice="notify" @edict="fromMemorial" />
     <PalaceMapPage v-else-if="page === 'palace'" :state="state" @notice="notify" @navigate="navigate" />
     <template #overlays><Transition name="toast"><div v-if="toast" class="toast-message" role="status"><StudioIcon name="check" :size="16" />{{ toast }}</div></Transition></template>
   </AppLayout>

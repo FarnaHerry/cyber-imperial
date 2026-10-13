@@ -6,6 +6,7 @@ import type { Stamp } from '../core/stamp'
 import { isFontKey } from '../core/fonts'
 import { DEFAULT_MEMBERS, drawPalaceMember, royalEdict, type PalaceMember, type DrawRecord } from '../core/palace'
 import { restoreEmpire, type EmpireState } from '../core/empire'
+import { restoreMemorials, type MemorialState } from '../core/memorial'
 
 export const TEMPLATES = [
   { key: 'imperial', label: '敕封圣旨', hint: '奉天承运 · 加官进爵', mark: '诏', create: (who: string) => DEFAULT_EDICT.replace('今有卿', () => `今有${who || '卿'}`) },
@@ -14,7 +15,7 @@ export const TEMPLATES = [
   { key: 'blank', label: '自由创作', hint: '一纸素笺 · 自由落笔', mark: '书', create: () => '' },
 ] as const
 
-export interface StudioState extends EmpireState {
+export interface StudioState extends EmpireState, MemorialState {
   text: string
   subject: string
   sealText: string
@@ -60,7 +61,7 @@ function readDraft(): Partial<StudioState> | null {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (!stored) return null
     const s = JSON.parse(stored)
-    if (![2, 3, 4].includes(s?.version) || !s.state) return null
+    if (![2, 3, 4, 5].includes(s?.version) || !s.state) return null
     const d = s.state
     if (!string(d.text, 1200) || !string(d.subject, 12) || !string(d.sealText, 8)
       || !INKS.some(i => i.key === d.inkKey) || !PAPERS.some(p => p.key === d.paper)
@@ -71,7 +72,7 @@ function readDraft(): Partial<StudioState> | null {
       || !Array.isArray(d.members) || d.members.length > 24 || !d.members.every(validMember)
       || new Set(d.members.map((m: PalaceMember) => m.id)).size !== d.members.length
       || !Array.isArray(d.draws) || d.draws.length > 50 || !d.draws.every(validDraw) || typeof d.avoidRepeat !== 'boolean')) return null
-    return { ...d, ...restoreEmpire(s.version === 4 ? d : undefined), stamps: d.stamps.map((stamp: Stamp) => ({ ...stamp, font: stamp.font ?? 'serif' })) }
+    return { ...d, ...restoreEmpire(s.version >= 4 ? d : undefined), ...restoreMemorials(s.version >= 5 ? d : undefined), stamps: d.stamps.map((stamp: Stamp) => ({ ...stamp, font: stamp.font ?? 'serif' })) }
   } catch { return null }
 }
 
@@ -79,6 +80,7 @@ export function useStudio() {
   const draft = readDraft()
   const state = reactive<StudioState>({
     ...restoreEmpire(draft),
+    ...restoreMemorials(draft),
     text: DEFAULT_EDICT, subject: '', sealText: '受命于天既寿永昌', inkKey: 'cinnabar',
     force: .76, erosion: .38, sealSize: 148, paper: 'parchment', sound: true, stamps: [], ...draft,
     theme: draft?.theme ?? 'dark', sealFont: draft?.sealFont ?? 'bird', edictFont: draft?.edictFont ?? 'brush',
@@ -129,7 +131,7 @@ export function useStudio() {
   let timer: ReturnType<typeof setTimeout> | undefined
   function save() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 4, state }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 5, state }))
       saveStatus.value = 'saved'
     } catch { saveStatus.value = 'unavailable' }
   }

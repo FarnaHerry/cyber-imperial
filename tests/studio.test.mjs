@@ -249,7 +249,7 @@ test('3.0 草稿迁移后保留圣旨与印痕，补全双库、官制和宫殿�
     assert.equal(Object.keys(studio.state.rankTitles).length, 19)
     assert.equal(studio.state.halls.length, PALACE_PLAN.length)
     assert.ok(studio.state.treasures.some(t => t.kind === '至宝'))
-    assert.equal(JSON.parse(storage.get('cyber-imperial-studio:v2')).version, 4)
+    assert.equal(JSON.parse(storage.get('cyber-imperial-studio:v2')).version, 5)
   } finally { stop() }
 })
 
@@ -292,4 +292,72 @@ test('损坏的新领域单独恢复，不入流职名固定，既有圣旨不�
     assert.equal(studio.state.rankTitles.unranked.civil, '不入流小官')
     assert.ok(studio.state.halls[0].name)
   } finally { stop() }
+})
+
+const { createMemorial, submitMemorial, reviewMemorial } = await import(await compileFile(new URL('../src/core/memorial.ts', import.meta.url)))
+const memorialInput = { title: '军备修缮折', author: '秦镇岳', office: '大将军', category: '军务', urgent: true, content: '请勘验边防营垒，核实用度。' }
+
+test('4.0 草稿迁移至 5.0，保留各领域数据并初始化奏折簿', () => {
+  storage.clear()
+  const first = mount()
+  first.studio.state.text = '旧朝御制'
+  first.studio.state.treasures[0].quantity = 3
+  first.studio.state.officers[0].name = '自定官员'
+  first.studio.state.halls[0].name = '旧朝御苑'
+  first.studio.addStamp(stamp('v4'))
+  first.stop()
+  const old = JSON.parse(storage.get('cyber-imperial-studio:v2'))
+  old.version = 4; delete old.state.memorials
+  storage.set('cyber-imperial-studio:v2', JSON.stringify(old))
+  const { studio, stop } = mount()
+  try {
+    assert.equal(studio.restored, true)
+    assert.equal(studio.state.text, '旧朝御制')
+    assert.equal(studio.state.stamps[0].id, 'v4')
+    assert.equal(studio.state.treasures[0].quantity, 3)
+    assert.equal(studio.state.officers[0].name, '自定官员')
+    assert.equal(studio.state.halls[0].name, '旧朝御苑')
+    assert.deepEqual(studio.state.memorials, [])
+    assert.equal(JSON.parse(storage.get('cyber-imperial-studio:v2')).version, 5)
+  } finally { stop() }
+})
+
+test('pagehide 保存后奏折、具折人、朱批和修订轮次完整恢复', async () => {
+  storage.clear()
+  const first = mount(), m = createMemorial(memorialInput)
+  submitMemorial(m); reviewMemorial(m, 'returned', '请附用度明细。', '景曜')
+  submitMemorial(m); reviewMemorial(m, 'approved', '准奏。', '景曜')
+  first.studio.state.memorials.push(m)
+  await nextTick()
+  window.dispatchEvent(new Event('pagehide'))
+  assert.equal(first.studio.saveStatus.value, 'saved')
+  first.stop()
+  const { studio, stop } = mount()
+  try { assert.deepEqual(JSON.parse(JSON.stringify(studio.state.memorials)), [m]) } finally { stop() }
+})
+
+test('奏折数据损坏独立恢复，不影响圣旨与双库', () => {
+  storage.clear()
+  const first = mount()
+  first.studio.state.text = '留下圣旨'
+  first.studio.state.treasures[0].quantity = 7
+  first.studio.state.memorials.push(createMemorial(memorialInput))
+  first.stop()
+  const data = JSON.parse(storage.get('cyber-imperial-studio:v2'))
+  data.state.memorials[0].status = 'approved'
+  storage.set('cyber-imperial-studio:v2', JSON.stringify(data))
+  const { studio, stop } = mount()
+  try {
+    assert.equal(studio.restored, true)
+    assert.equal(studio.state.text, '留下圣旨')
+    assert.equal(studio.state.treasures[0].quantity, 7)
+    assert.deepEqual(studio.state.memorials, [])
+  } finally { stop() }
+})
+
+const { PAGES, pageFromHash } = await import(await compileFile(new URL('../src/core/navigation.ts', import.meta.url)))
+test('奏折页面支持直接链接，未知导航回到工坊', () => {
+  assert.equal(pageFromHash('#memorials'), 'memorials')
+  assert.ok(PAGES.some(p => p.key === 'memorials'))
+  assert.equal(pageFromHash('#unknown'), 'studio')
 })

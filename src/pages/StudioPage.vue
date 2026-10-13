@@ -40,6 +40,8 @@ async function onFontFile(e: Event) {
 const stage = ref<InstanceType<typeof ImperialCanvas> | null>(null)
 const dockEl = ref<HTMLElement | null>(null)
 const revealKey = ref(0)
+const folded = ref(false)
+const scrollMoving = ref(false)
 const ghost = ref<Point | null>(null)
 const selectedTemplate = ref<string>(restored ? '' : 'imperial')
 const focusMode = ref(false)
@@ -49,6 +51,7 @@ const characterCount = computed(() => Array.from(state.text.replace(/\s/g, '')).
 const forceLabel = computed(() => state.force < .35 ? '轻触' : state.force < .7 ? '适中' : state.force < .9 ? '重按' : '全力')
 function notify(message: string) { emit('notice', message) }
 function stampAt(p: Point, signature = false) {
+  if (folded.value || scrollMoving.value) return
   const force = signature ? Math.min(1, state.force + .12) : state.force
   const point = clampSealPoint(p, state.sealSize, state.sealAngle)
   const ok = addStamp(createStamp({
@@ -61,6 +64,7 @@ function stampAt(p: Point, signature = false) {
   if (state.sound) { unlockAudio(); playStamp(force) }
 }
 function signature() {
+  if (folded.value || scrollMoving.value) { notify('先展开圣旨，再落款用印'); return }
   const p = stage.value?.signature()
   if (!p) { notify('先写下正文，再落款用印'); return }
   stampAt(p, true)
@@ -72,6 +76,8 @@ function selectTemplate(template: typeof TEMPLATES[number]) {
   notify(`已切换「${template.label}」`)
 }
 function randomize() { regenerate(); selectedTemplate.value = ''; notify('新诏书已拟好') }
+function toggleScroll() { ghost.value = null; folded.value = !folded.value }
+function replayWriting() { folded.value = false; revealKey.value++ }
 async function exportImage() {
   if (!stage.value || exporting.value || !props.active) return
   if (overflow.value) { notify('正文超出纸面，请减少换行或缩短正文后导出'); return }
@@ -116,15 +122,18 @@ defineExpose({ exportImage, resetTemplate })
           <div class="field-heading body-label"><label for="edict">诏书正文</label><span>{{ characterCount }} 字</span></div>
           <textarea id="edict" v-model="state.text" class="edict-input" maxlength="1200" spellcheck="false" placeholder="从右至左，写下你想说的话…" @input="selectedTemplate = ''" />
           <p v-if="overflow" class="overflow-warning" role="alert">正文分栏超出纸面，请减少换行或缩短正文后导出。</p>
-          <div class="writing-actions"><button class="text-button" @click="randomize"><StudioIcon name="shuffle" :size="15" /> 随机拟旨</button><button class="text-button" :disabled="!characterCount" @click="revealKey++"><StudioIcon name="replay" :size="14" /> 重放书写</button></div>
+          <div class="writing-actions"><button class="text-button" @click="randomize"><StudioIcon name="shuffle" :size="15" /> 随机拟旨</button><button class="text-button" :disabled="!characterCount" @click="replayWriting"><StudioIcon name="replay" :size="14" /> 重放书写</button></div>
         </section>
         <div class="editor-foot"><span class="small-seal">御</span><p>文字有温度，落印有分量。<br /><span>把这一刻，留在纸上。</span></p></div>
       </aside>
 
       <section class="canvas-workspace" aria-label="作品预览">
-        <div class="canvas-toolbar"><div class="paper-picker" aria-label="纸张材质"><span class="toolbar-label">纸张</span><button v-for="paper in PAPERS" :key="paper.key" :class="{ active: state.paper === paper.key }" :aria-pressed="state.paper === paper.key" @click="state.paper = paper.key"><span :style="{ background: paper.color }" />{{ paper.label }}</button></div><button class="icon-button" :aria-label="focusMode ? '退出专注模式' : '专注模式'" :title="focusMode ? '退出专注模式 · Esc' : '专注模式'" :aria-pressed="focusMode" @click="focusMode = !focusMode"><StudioIcon :name="focusMode ? 'close' : 'expand'" :size="16" /></button></div>
+        <div class="canvas-toolbar">
+          <div class="paper-picker" aria-label="纸张材质"><span class="toolbar-label">纸张</span><button v-for="paper in PAPERS" :key="paper.key" :class="{ active: state.paper === paper.key }" :aria-pressed="state.paper === paper.key" @click="state.paper = paper.key"><span :style="{ background: paper.color }" />{{ paper.label }}</button></div>
+          <div class="scroll-tools"><button class="scroll-toggle" aria-controls="edict-scroll" :aria-expanded="!folded" @click="toggleScroll"><StudioIcon :name="folded ? 'unfold' : 'fold'" :size="15" />{{ folded ? '展开圣旨' : '收起圣旨' }}</button><button class="icon-button" :aria-label="focusMode ? '退出专注模式' : '专注模式'" :title="focusMode ? '退出专注模式 · Esc' : '专注模式'" :aria-pressed="focusMode" @click="focusMode = !focusMode"><StudioIcon :name="focusMode ? 'close' : 'expand'" :size="16" /></button></div>
+        </div>
         <div class="canvas-surface">
-          <div class="paper-holder"><ImperialCanvas ref="stage" :text="state.text" :reveal-key="revealKey" :ink="ink.color" :force="state.force" :erosion="state.erosion" :seal-size="state.sealSize" :seal-text="sealText" :ghost="ghost" :paper="state.paper" :stamps="state.stamps" :seal-font="state.sealFont" :edict-font="state.edictFont" :seal-angle="state.sealAngle" :kingdom="state.kingdom" :emperor="state.emperor" @stamp="stampAt" @overflow="overflow = $event" /></div>
+          <div class="paper-holder"><ImperialCanvas ref="stage" v-model:rolling="scrollMoving" :folded="folded" :text="state.text" :reveal-key="revealKey" :ink="ink.color" :force="state.force" :erosion="state.erosion" :seal-size="state.sealSize" :seal-text="sealText" :ghost="ghost" :paper="state.paper" :stamps="state.stamps" :seal-font="state.sealFont" :edict-font="state.edictFont" :seal-angle="state.sealAngle" :kingdom="state.kingdom" :emperor="state.emperor" @stamp="stampAt" @overflow="overflow = $event" @unfold="folded = false" /></div>
         </div>
         <div class="canvas-bottom"><div class="history-tools"><button class="icon-button" :disabled="!canUndo" aria-label="撤销" title="撤销 · Ctrl / ⌘ Z" @click="undo"><StudioIcon name="undo" :size="16" /></button><button class="icon-button" :disabled="!canRedo" aria-label="重做" title="重做 · Ctrl / ⌘ Shift Z" @click="redo"><StudioIcon name="redo" :size="16" /></button><span class="tool-divider" /><button class="text-button clear-button" :disabled="!state.stamps.length" @click="clear"><StudioIcon name="trash" :size="14" /> 清空印痕</button></div><span class="stamp-counter"><b>{{ String(state.stamps.length).padStart(2, '0') }}</b> 枚印痕 <span class="tool-divider" /> 1200 × 800</span></div>
       </section>
@@ -142,7 +151,7 @@ defineExpose({ exportImage, resetTemplate })
           <div class="slider-field"><label for="erosion">岁月痕迹<span><b>{{ Math.round(state.erosion * 100) }}%</b></span></label><input id="erosion" v-model.number="state.erosion" type="range" min="0" max="0.92" step="0.01" :style="{ '--progress': `${state.erosion / .92 * 100}%` }" /><div class="range-labels"><span>新刻</span><span>斑驳</span></div></div>
           <div class="slider-field"><label for="seal-size">印面尺寸<span><b>{{ state.sealSize }}</b> px</span></label><input id="seal-size" v-model.number="state.sealSize" type="range" min="60" max="260" step="1" :style="{ '--progress': `${(state.sealSize - 60) / 200 * 100}%` }" /><div class="range-labels"><span>小巧</span><span>恢宏</span></div></div>
         </section>
-        <div class="seal-actions"><button class="button signature-button" :disabled="!characterCount" @click="signature"><StudioIcon name="stamp" :size="17" /> 落款用印<span>↗</span></button><button class="sound-toggle" :aria-pressed="state.sound" @click="state.sound = !state.sound"><StudioIcon :name="state.sound ? 'volume' : 'mute'" :size="15" /><span>落印音效</span><span class="toggle-track" :class="{ on: state.sound }"><i /></span></button></div>
+        <div class="seal-actions"><button class="button signature-button" :disabled="!characterCount || folded || scrollMoving" @click="signature"><StudioIcon name="stamp" :size="17" /> 落款用印<span>↗</span></button><button class="sound-toggle" :aria-pressed="state.sound" @click="state.sound = !state.sound"><StudioIcon :name="state.sound ? 'volume' : 'mute'" :size="15" /><span>落印音效</span><span class="toggle-track" :class="{ on: state.sound }"><i /></span></button></div>
       </aside>
   </main>
     <FloatingSeal v-if="!focusMode && active" :ink="ink.color" :text="sealText" :font="state.sealFont" :angle="state.sealAngle" :erosion="state.erosion" :size="128" :dock="dockEl" :to-canvas="(x, y) => stage?.toCanvas(x, y) ?? null" @drop="({ clientX, clientY }) => { const p = stage?.toCanvas(clientX, clientY); if (p) stampAt(p) }" @hover="ghost = $event" />
@@ -172,7 +181,7 @@ defineExpose({ exportImage, resetTemplate })
 .template-copy strong { font-size: 11px; font-weight: 500; letter-spacing: .5px; }
 .template-copy small { font-size: 8px; color: #8b978c; letter-spacing: .4px; }
 .template-check { color: #d7b18d; position: absolute; right: 8px; top: 8px; }
-.writing-section { padding-top: 0; display: flex; flex-direction: column; flex: 1; min-height: 275px; }
+.writing-section { padding-top: 0; display: flex; flex-direction: column; flex: 1 0 auto; min-height: 275px; }
 .edict-input { display: block; width: 100%; border: 1px solid #ffffff12; border-radius: var(--radius); padding: 11px 12px; background: #10171265; color: #d6dacd; outline: none; font-size: 11px; }
 .edict-input:focus { border-color: #c69f7680; }
 .edict-input::placeholder { color: #758376; }
@@ -193,9 +202,9 @@ defineExpose({ exportImage, resetTemplate })
 .paper-picker button span { display: block; width: 10px; height: 10px; border: 1px solid #ffffff20; border-radius: var(--radius); }
 .canvas-surface { flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; overflow: hidden; padding: 32px; }
 .paper-holder { width: min(100%, 150cqh); max-width: none; position: relative; }
-.paper-holder::before, .paper-holder::after { content: ''; width: 7px; position: absolute; top: -7px; bottom: -7px; border-radius: var(--radius); background: linear-gradient(90deg, #493b29, #7c6641, #332d23); box-shadow: 1px 1px 3px #0005; z-index: 1; }
-.paper-holder::before { left: -6px; }
-.paper-holder::after { right: -6px; }
+.scroll-tools { display: flex; align-items: center; gap: 12px; }
+.scroll-toggle { display: inline-flex; align-items: center; gap: 6px; flex: none; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); color: var(--accent); font-size: 10px; padding: 7px 9px; white-space: nowrap; }
+.scroll-toggle:hover { border-color: var(--accent); }
 .canvas-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 51px; height: 51px; padding: 0 22px; border-top: 1px solid var(--line); }
 .history-tools { display: flex; align-items: center; gap: 4px; }
 .stamp-counter { font-size: 9px; color: #8d9987; white-space: nowrap; }
@@ -266,6 +275,10 @@ defineExpose({ exportImage, resetTemplate })
 .workspace { display: flex; flex-direction: column; }
 .canvas-workspace { order: 0; min-height: 490px; }
 .canvas-toolbar { height: 51px; min-height: 51px; padding: 0 16px; }
+.scroll-tools { gap: 5px; }
+.scroll-toggle { padding: 6px; }
+.paper-picker .toolbar-label { display: none; }
+.paper-picker button { padding: 6px 5px; }
 .canvas-surface { padding: 25px 22px; }
 .canvas-bottom { padding: 0 14px; }
 .stamp-counter { font-size: 8px; }
