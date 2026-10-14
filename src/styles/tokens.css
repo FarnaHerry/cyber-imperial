@@ -1,0 +1,26 @@
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* 浅色主题变体。data-theme 挂在 :root 上，所以是后代关系；
+   Tailwind 的任意变体要求选择器里含 &，直接写 [data-theme=light]:xxx 会被静默丢弃，
+   故在此定义具名变体，用法：light:text-[#8b7857]。 */
+@custom-variant light (&:where([data-theme='light'] *));
+
+/* 设计令牌的唯一来源。字体族在此声明（style.css 不再重复），
+   圆角整档指向项目自身的 2px，使 rounded-* 与手写 CSS 的 var(--radius) 一致。
+   深红由 MemorialPage.css 在各自作用域内以 --vermillion 维护，故不在此声明。 */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-muted: var(--muted);
+  --color-text: var(--text);
+  --color-accent: var(--accent);
+  --font-sans: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-serif: 'Noto Serif SC', 'Songti SC', 'STZhongsong', 'SimSun', serif;
+  --radius-xs: var(--radius);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+}

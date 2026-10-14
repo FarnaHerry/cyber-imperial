@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
-import { createRenderer, nextTick } from 'vue'
 import ts from 'typescript'
 
 const modules = new Map()
@@ -17,23 +16,16 @@ async function compileFile(url) {
   modules.set(url.href, compiled)
   return compiled
 }
-const { useStudio } = await import(await compileFile(new URL('../src/composables/useStudio.ts', import.meta.url)))
+const { createStudioStore } = await import(await compileFile(new URL('../src/state/studioStore.ts', import.meta.url)))
 const storage = new Map()
 globalThis.window = new EventTarget()
 globalThis.localStorage = {
   getItem: key => storage.get(key) ?? null,
   setItem: (key, value) => storage.set(key, value),
 }
-const renderer = createRenderer({
-  createElement: () => ({}), createText: () => ({}), createComment: () => ({}),
-  insert() {}, remove() {}, patchProp() {}, setText() {}, setElementText() {},
-  parentNode: () => null, nextSibling: () => null,
-})
 function mount() {
-  let studio
-  const app = renderer.createApp({ setup() { studio = useStudio(); return () => null } })
-  app.mount({})
-  return { studio, stop: () => app.unmount() }
+  const studio = createStudioStore()
+  return { studio, stop: () => studio.dispose() }
 }
 const stamp = id => ({ id, x: 400, y: 500, size: 148, rotation: 0, ink: '#e0453a', force: .76, erosion: .38, text: '受命于天既寿永昌', seed: 1000, font: 'serif' })
 
@@ -55,7 +47,7 @@ test('撤销后继续盖印会丢弃原来的重做分支', () => {
   const { studio, stop } = mount()
   try {
     studio.addStamp(stamp('a')); studio.addStamp(stamp('b')); studio.undo(); studio.addStamp(stamp('c'))
-    assert.equal(studio.canRedo.value, false)
+    assert.equal(studio.canRedo, false)
     studio.redo()
     assert.deepEqual(studio.state.stamps.map(s => s.id), ['a', 'c'])
   } finally { stop() }
@@ -64,13 +56,11 @@ test('撤销后继续盖印会丢弃原来的重做分支', () => {
 test('离开页面前保存，草稿完整恢复印文、正文和印痕', async () => {
   storage.clear()
   const first = mount()
-  first.studio.state.sealText = '山海皆可平'
-  first.studio.state.text = '这是草稿'
-  first.studio.state.paper = 'night'
+  first.studio.set({ sealText: '山海皆可平', text: '这是草稿', paper: 'night' })
   first.studio.addStamp(stamp('a'))
-  await nextTick()
+  await Promise.resolve()
   window.dispatchEvent(new Event('pagehide'))
-  assert.equal(first.studio.saveStatus.value, 'saved')
+  assert.equal(first.studio.saveStatus, 'saved')
   first.stop()
   const second = mount()
   try {
@@ -103,13 +93,13 @@ test('本地存储不可用时仍然可以创作', () => {
   localStorage.setItem = () => { throw new Error('QuotaExceededError') }
   const { studio, stop } = mount()
   try {
-    assert.equal(studio.saveStatus.value, 'unavailable')
+    assert.equal(studio.saveStatus, 'unavailable')
     assert.equal(studio.addStamp(stamp('offline')), true)
     assert.equal(studio.state.stamps.length, 1)
   } finally { stop(); localStorage.setItem = original }
 })
 
-const { drawPalaceMember, royalEdict } = await import(await compileFile(new URL('../src/core/palace.ts', import.meta.url)))
+const { drawPalaceMember, royalEdict, memberColor } = await import(await compileFile(new URL('../src/core/palace.ts', import.meta.url)))
 const { createStamp } = await import(await compileFile(new URL('../src/core/stamp.ts', import.meta.url)))
 
 test('迁移 2.0 草稿时保留已有印痕的宋体，新增玉玺默认鸟虫篆风格', () => {
@@ -154,7 +144,7 @@ test('多人抽签在启用防重复时跳过上次人物', () => {
 test('主题、国号、名讳、字体、旋转、宫册与翻牌历史均可恢复', () => {
   storage.clear()
   const first = mount()
-  Object.assign(first.studio.state, { theme: 'light', kingdom: '大玄', emperor: '景曜', edictFont: 'li', sealFont: 'kai', sealAngle: 135 })
+  first.studio.set({ theme: 'light', kingdom: '大玄', emperor: '景曜', edictFont: 'li', sealFont: 'kai', sealAngle: 135 })
   const record = first.studio.flip()
   first.studio.regenerate()
   assert.ok(first.studio.state.text.includes('大玄皇帝「景曜」') || first.studio.state.text.startsWith('制曰'))
@@ -177,11 +167,35 @@ test('翻牌簿只保留 50 次，历史记录不随宫册改名而改变', () =
   storage.clear()
   const { studio, stop } = mount()
   try {
-    studio.state.members = [{ id: 'only', name: '旧名', title: '妃', palace: '旧宫', enabled: true }]
+    studio.set({ members: [{ id: 'only', name: '旧名', title: '妃', palace: '旧宫', enabled: true }] })
     for (let i = 0; i < 55; i++) studio.flip()
-    studio.state.members[0].name = '新名'
+    studio.set({ members: studio.state.members.map(m => ({ ...m, name: '新名' })) })
     assert.equal(studio.state.draws.length, 50)
     assert.ok(studio.state.draws.every(d => d.name === '旧名'))
+  } finally { stop() }
+})
+
+test('宫册人物颜色随草稿保存恢复，损坏时回落自动配色且不丢人物', () => {
+  storage.clear()
+  const first = mount()
+  first.studio.set({ members: first.studio.state.members.map(m => m.id === 'palace-1' ? { ...m, color: '#112233' } : m) })
+  first.stop()
+  const restored = mount()
+  assert.equal(restored.studio.state.members[0].color, '#112233')
+  restored.stop()
+  const data = JSON.parse(storage.get('cyber-imperial-studio:v2'))
+  data.state.members[0].color = '胭脂色'
+  data.state.members[1].color = '#xyzxyz'
+  storage.set('cyber-imperial-studio:v2', JSON.stringify(data))
+  const { studio, stop } = mount()
+  try {
+    assert.equal(studio.state.members.length, 6)
+    assert.equal(studio.state.members[0].color, undefined)
+    assert.equal(studio.state.members[1].color, undefined)
+    const auto = memberColor(studio.state.members[0])
+    assert.equal(auto, memberColor({ id: 'palace-1' }))
+    assert.ok(/^#[0-9a-f]{6}$/i.test(auto))
+    assert.equal(memberColor({ id: 'palace-1', color: '#112233' }), '#112233')
   } finally { stop() }
 })
 
@@ -206,7 +220,7 @@ test('180 度旋转的占地与 0 度一致，45 度需要更大的边界', () =
   assert.ok(sealHalfExtent(148, 45) > sealHalfExtent(148, 0))
 })
 
-const { RANKS, TREASURE_KINDS, warehouseOf, stockBalance, PALACE_PLAN } = await import(await compileFile(new URL('../src/core/empire.ts', import.meta.url)))
+const { RANKS, TREASURE_KINDS, warehouseOf, stockBalance, PALACE_PLAN, rankColor, treasureColor, DEFAULT_TREASURE_COLORS } = await import(await compileFile(new URL('../src/core/empire.ts', import.meta.url)))
 
 test('文武共用十九档品级，正一品最高、从品低于同级正品、不入流最低', () => {
   assert.equal(RANKS.length, 19)
@@ -224,6 +238,54 @@ test('文武共用十九档品级，正一品最高、从品低于同级正品�
   assert.equal(RANKS[18].military, '不入流小官')
 })
 
+test('品阶颜色随草稿保存恢复，损坏或缺失时单独回落默认色', () => {
+  storage.clear()
+  const first = mount()
+  first.studio.set({ rankColors: { ...first.studio.state.rankColors, '1-zheng': '#112233', unranked: '#445566' } })
+  first.stop()
+  const restored = mount()
+  assert.equal(restored.studio.state.rankColors['1-zheng'], '#112233')
+  assert.equal(restored.studio.state.rankColors.unranked, '#445566')
+  restored.stop()
+  const data = JSON.parse(storage.get('cyber-imperial-studio:v2'))
+  data.state.rankColors['1-zheng'] = '大红色'
+  delete data.state.rankColors['2-zheng']
+  data.state.rankTitles['1-zheng'] = { civil: '内阁首辅', military: '镇国上将' }
+  storage.set('cyber-imperial-studio:v2', JSON.stringify(data))
+  const { studio, stop } = mount()
+  try {
+    assert.equal(studio.state.rankColors['1-zheng'], RANKS[0].color)
+    assert.equal(studio.state.rankColors['2-zheng'], RANKS[2].color)
+    assert.equal(rankColor(studio.state.rankColors, '3-zheng'), RANKS[4].color)
+    assert.equal(rankColor({}, '1-zheng'), RANKS[0].color)
+    assert.deepEqual(studio.state.rankTitles['1-zheng'], { civil: '内阁首辅', military: '镇国上将' })
+  } finally { stop() }
+})
+
+test('藏品类色随草稿保存恢复，损坏或缺失时单独回落默认色', () => {
+  storage.clear()
+  const first = mount()
+  first.studio.set({ treasureColors: { ...first.studio.state.treasureColors, 至宝: '#112233', 贡品: '#445566' } })
+  first.stop()
+  const restored = mount()
+  assert.equal(restored.studio.state.treasureColors['至宝'], '#112233')
+  assert.equal(restored.studio.state.treasureColors['贡品'], '#445566')
+  restored.stop()
+  const data = JSON.parse(storage.get('cyber-imperial-studio:v2'))
+  data.state.treasureColors['至宝'] = '金色'
+  delete data.state.treasureColors['军备']
+  data.state.treasures[0].kind = '金银'
+  storage.set('cyber-imperial-studio:v2', JSON.stringify(data))
+  const { studio, stop } = mount()
+  try {
+    assert.equal(studio.state.treasureColors['至宝'], DEFAULT_TREASURE_COLORS['至宝'])
+    assert.equal(studio.state.treasureColors['军备'], DEFAULT_TREASURE_COLORS['军备'])
+    assert.equal(treasureColor(studio.state.treasureColors, '器物'), DEFAULT_TREASURE_COLORS['器物'])
+    assert.equal(treasureColor({}, '金银'), DEFAULT_TREASURE_COLORS['金银'])
+    assert.equal(studio.state.treasures[0].kind, '金银')
+  } finally { stop() }
+})
+
 test('至宝专入皇室宝库；库存不允许超支、负数、小数或超过上限', () => {
   for (const kind of TREASURE_KINDS) assert.equal(warehouseOf(kind), kind === '至宝' ? '皇室宝库' : '国库')
   assert.equal(stockBalance(10, -10), 0)
@@ -234,7 +296,7 @@ test('至宝专入皇室宝库；库存不允许超支、负数、小数或超�
 test('3.0 草稿迁移后保留圣旨与印痕，补全双库、官制和宫殿图', () => {
   storage.clear()
   const first = mount()
-  first.studio.state.text = '旧朝圣旨'
+  first.studio.set({ text: '旧朝圣旨' })
   first.studio.addStamp(stamp('migration'))
   first.stop()
   const old = JSON.parse(storage.get('cyber-imperial-studio:v2'))
@@ -256,11 +318,13 @@ test('3.0 草稿迁移后保留圣旨与印痕，补全双库、官制和宫殿�
 test('双库数量、出入库簿、文武职名与官员品级、殿名在刷新后恢复', () => {
   storage.clear()
   const first = mount(), s = first.studio.state
-  s.treasures[0].kind = '器物'; s.treasures[0].quantity = 12
-  s.rankTitles['1-cong'] = { civil: '内阁首辅', military: '镇国上将' }
-  s.officers[0].rank = '1-cong'; s.officers[0].role = 'military'
-  s.halls[0].name = '上林御苑'; s.halls[0].purpose = '游赏'
-  s.stockRecords = [{ id: 'stock-test', name: '库银', kind: '金银', delta: -10, unit: '两', at: new Date().toISOString(), reason: '调拨' }]
+  first.studio.set({
+    treasures: s.treasures.map((t, i) => i === 0 ? { ...t, kind: '器物', quantity: 12 } : t),
+    rankTitles: { ...s.rankTitles, '1-cong': { civil: '内阁首辅', military: '镇国上将' } },
+    officers: s.officers.map((o, i) => i === 0 ? { ...o, rank: '1-cong', role: 'military' } : o),
+    halls: s.halls.map((h, i) => i === 0 ? { ...h, name: '上林御苑', purpose: '游赏' } : h),
+    stockRecords: [{ id: 'stock-test', name: '库银', kind: '金银', delta: -10, unit: '两', at: new Date().toISOString(), reason: '调拨' }],
+  })
   first.stop()
   const { studio, stop } = mount()
   try {
@@ -276,7 +340,10 @@ test('双库数量、出入库簿、文武职名与官员品级、殿名在刷�
 
 test('损坏的新领域单独恢复，不入流职名固定，既有圣旨不被清空', () => {
   storage.clear()
-  const first = mount(); first.studio.state.text = '留下这道旨'; first.studio.addStamp(stamp('safe')); first.stop()
+  const first = mount()
+  first.studio.set({ text: '留下这道旨' })
+  first.studio.addStamp(stamp('safe'))
+  first.stop()
   const data = JSON.parse(storage.get('cyber-imperial-studio:v2'))
   data.state.treasures[0].quantity = -1
   data.state.officers[0].rank = '10-zheng'
@@ -300,10 +367,11 @@ const memorialInput = { title: '军备修缮折', author: '秦镇岳', office: '
 test('4.0 草稿迁移至 5.0，保留各领域数据并初始化奏折簿', () => {
   storage.clear()
   const first = mount()
-  first.studio.state.text = '旧朝御制'
-  first.studio.state.treasures[0].quantity = 3
-  first.studio.state.officers[0].name = '自定官员'
-  first.studio.state.halls[0].name = '旧朝御苑'
+  const s = first.studio.state
+  first.studio.set({ text: '旧朝御制' })
+  first.studio.set({ treasures: s.treasures.map((t, i) => i === 0 ? { ...t, quantity: 3 } : t) })
+  first.studio.set({ officers: s.officers.map((o, i) => i === 0 ? { ...o, name: '自定官员' } : o) })
+  first.studio.set({ halls: s.halls.map((h, i) => i === 0 ? { ...h, name: '旧朝御苑' } : h) })
   first.studio.addStamp(stamp('v4'))
   first.stop()
   const old = JSON.parse(storage.get('cyber-imperial-studio:v2'))
@@ -327,10 +395,10 @@ test('pagehide 保存后奏折、具折人、朱批和修订轮次完整恢复',
   const first = mount(), m = createMemorial(memorialInput)
   submitMemorial(m); reviewMemorial(m, 'returned', '请附用度明细。', '景曜')
   submitMemorial(m); reviewMemorial(m, 'approved', '准奏。', '景曜')
-  first.studio.state.memorials.push(m)
-  await nextTick()
+  first.studio.set({ memorials: [m] })
+  await Promise.resolve()
   window.dispatchEvent(new Event('pagehide'))
-  assert.equal(first.studio.saveStatus.value, 'saved')
+  assert.equal(first.studio.saveStatus, 'saved')
   first.stop()
   const { studio, stop } = mount()
   try { assert.deepEqual(JSON.parse(JSON.stringify(studio.state.memorials)), [m]) } finally { stop() }
@@ -339,9 +407,10 @@ test('pagehide 保存后奏折、具折人、朱批和修订轮次完整恢复',
 test('奏折数据损坏独立恢复，不影响圣旨与双库', () => {
   storage.clear()
   const first = mount()
-  first.studio.state.text = '留下圣旨'
-  first.studio.state.treasures[0].quantity = 7
-  first.studio.state.memorials.push(createMemorial(memorialInput))
+  first.studio.set({ text: '留下圣旨' })
+  const treasures = first.studio.state.treasures.map((t, i) => i === 0 ? { ...t, quantity: 7 } : t)
+  first.studio.set({ treasures })
+  first.studio.set({ memorials: [createMemorial(memorialInput)] })
   first.stop()
   const data = JSON.parse(storage.get('cyber-imperial-studio:v2'))
   data.state.memorials[0].status = 'approved'

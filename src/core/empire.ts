@@ -6,7 +6,7 @@ export interface StockRecord { id: string; name: string; kind: TreasureKind; del
 export interface Officer { id: string; name: string; role: OfficialRole; rank: string; duty: string }
 export interface Hall { id: string; name: string; purpose: string }
 export interface RankTitles { civil: string; military: string }
-export interface EmpireState { treasures: Treasure[]; stockRecords: StockRecord[]; rankTitles: Record<string, RankTitles>; officers: Officer[]; halls: Hall[] }
+export interface EmpireState { treasures: Treasure[]; stockRecords: StockRecord[]; rankTitles: Record<string, RankTitles>; rankColors: Record<string, string>; treasureColors: Record<string, string>; officers: Officer[]; halls: Hall[] }
 
 const numerals = ['一', '二', '三', '四', '五', '六', '七', '八', '九']
 const titles = [
@@ -16,11 +16,21 @@ const titles = [
   ['知县', '奋武校尉'], ['县丞', '宣义校尉'], ['国子监学正', '御侮校尉'], ['训导', '守备'],
   ['主簿', '把总'], ['典史', '什长'], ['不入流小官', '不入流小官'],
 ]
-/** 赛博官制的默认职名；品级固定，文武职名可分别自定义。 */
+/** 品色取自唐宋品色衣：三品以上紫、四五品绯、六七品绿、八九品青；同品正品深、从品浅。 */
+const colors = [
+  '#6d28d9', '#7c3aed', '#86198f', '#a21caf', '#9f1239', '#be123c', '#b91c1c', '#dc2626',
+  '#c2410c', '#ea580c', '#b45309', '#d97706', '#4d7c0f', '#65a30d', '#15803d', '#16a34a',
+  '#0e7490', '#0891b2',
+]
+/** 赛博官制的默认职名与品色；品级固定，文武职名与品色可分别自定义。 */
 export const RANKS = [...numerals.flatMap((n, i) => ['正', '从'].map((prefix, j) => ({
   key: `${i + 1}-${j === 0 ? 'zheng' : 'cong'}`, label: `${prefix}${n}品`, order: i * 2 + j,
-}))), { key: 'unranked', label: '不入流', order: 18 }].map((rank, i) => ({ ...rank, civil: titles[i][0], military: titles[i][1] }))
+}))), { key: 'unranked', label: '不入流', order: 18 }].map((rank, i) => ({ ...rank, civil: titles[i][0], military: titles[i][1], color: colors[i] ?? '#64748b' }))
 export const rankByKey = (key: string) => RANKS.find(rank => rank.key === key) ?? RANKS[18]
+export const rankColor = (colors: Record<string, string>, key: string): string => colors[key] ?? rankByKey(key).color
+/** 藏品类色：御金、银霜、麦黄、绛红、青瓷、贡紫，逐类可自定义。 */
+export const DEFAULT_TREASURE_COLORS: Record<TreasureKind, string> = { 至宝: '#b45309', 金银: '#94a3b8', 粮秣: '#ca8a04', 军备: '#b91c1c', 器物: '#0f766e', 贡品: '#7c3aed' }
+export const treasureColor = (colors: Record<string, string>, kind: string): string => colors[kind] ?? DEFAULT_TREASURE_COLORS[kind as TreasureKind] ?? '#64748b'
 export const warehouseOf = (kind: TreasureKind) => kind === '至宝' ? '皇室宝库' : '国库'
 export function stockBalance(quantity: number, delta: number): number | null {
   const next = quantity + delta
@@ -70,6 +80,8 @@ export const PALACE_PLAN: { id: string; name: string; purpose: string; x: number
 export function defaultEmpire(): EmpireState {
   return { treasures: DEFAULT_TREASURES.map(t => ({ ...t })), stockRecords: [], officers: DEFAULT_OFFICERS.map(o => ({ ...o })),
     rankTitles: Object.fromEntries(RANKS.map(r => [r.key, { civil: r.civil, military: r.military }])),
+    rankColors: Object.fromEntries(RANKS.map(r => [r.key, r.color])),
+    treasureColors: { ...DEFAULT_TREASURE_COLORS },
     halls: PALACE_PLAN.map(({ id, name, purpose }) => ({ id, name, purpose })) }
 }
 const text = (v: unknown, max: number, required = false): v is string => typeof v === 'string' && Array.from(v).length <= max && (!required || !!v.trim())
@@ -91,6 +103,14 @@ export function restoreEmpire(value: unknown): EmpireState {
     if (r.key === 'unranked') continue
     const saved = object(d.rankTitles) ? d.rankTitles[r.key] : null
     if (object(saved) && text(saved.civil, 24, true) && text(saved.military, 24, true) && saved.civil !== saved.military) base.rankTitles[r.key] = { civil: saved.civil, military: saved.military }
+  }
+  if (object(d.rankColors)) for (const r of RANKS) {
+    const saved = d.rankColors[r.key]
+    if (typeof saved === 'string' && /^#[0-9a-fA-F]{6}$/.test(saved)) base.rankColors[r.key] = saved
+  }
+  if (object(d.treasureColors)) for (const kind of TREASURE_KINDS) {
+    const saved = d.treasureColors[kind]
+    if (typeof saved === 'string' && /^#[0-9a-fA-F]{6}$/.test(saved)) base.treasureColors[kind] = saved
   }
   if (Array.isArray(d.halls)) for (const hall of base.halls) {
     const matches = d.halls.filter(h => object(h) && h.id === hall.id)

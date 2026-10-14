@@ -1,4 +1,4 @@
-export interface PalaceMember { id: string; name: string; title: string; palace: string; enabled: boolean }
+export interface PalaceMember { id: string; name: string; title: string; palace: string; enabled: boolean; color?: string }
 export interface DrawRecord { id: string; memberId: string; name: string; title: string; palace: string; at: string }
 export const DEFAULT_MEMBERS: PalaceMember[] = [
   { id: 'palace-1', name: '云裳', title: '贵妃', palace: '栖凤宫', enabled: true },
@@ -18,6 +18,14 @@ export function drawPalaceMember(members: PalaceMember[], avoidId?: string): Pal
   const random = new Uint32Array(1)
   do { crypto.getRandomValues(random) } while (random[0] >= cutoff)
   return pool[random[0] % pool.length]
+}
+/** 名牌配色：十二传统色，按人物 id 稳定取色；自定义色优先。 */
+export const MEMBER_COLORS = ['#d94f5c', '#e0698a', '#f08a4b', '#e8b34b', '#8aa84f', '#5e9e78', '#5da8a0', '#5b8ec4', '#7a6fc0', '#a06bb0', '#b07888', '#c25c5c'] as const
+export function memberColor(member: Pick<PalaceMember, 'id'> & Partial<Pick<PalaceMember, 'color'>>): string {
+  if (member.color && /^#[0-9a-fA-F]{6}$/.test(member.color)) return member.color
+  let hash = 0
+  for (const ch of member.id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
+  return MEMBER_COLORS[hash % MEMBER_COLORS.length]
 }
 export function royalEdict(text: string, kingdom: string, emperor: string): string {
   return text.replace(/赛博皇帝/g, () => `${kingdom.trim() || '赛博'}皇帝${emperor.trim() ? `「${emperor.trim()}」` : ''}`)

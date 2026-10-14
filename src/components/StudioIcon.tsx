@@ -1,7 +1,3 @@
-<script setup lang="ts">
-import { computed } from 'vue'
-const props = defineProps<{ name: string; size?: number }>()
-
 // 图标来自 Phosphor Icons (https://phosphoricons.com), MIT License
 // Copyright (c) 2023 Phosphor Icons
 const paths: Record<string, string> = {
@@ -28,6 +24,11 @@ const paths: Record<string, string> = {
   scroll: 'M96,104a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H104A8,8,0,0,1,96,104Zm8,40h64a8,8,0,0,0,0-16H104a8,8,0,0,0,0,16Zm128,48a32,32,0,0,1-32,32H88a32,32,0,0,1-32-32V64a16,16,0,0,0-32,0c0,5.74,4.83,9.62,4.88,9.66h0A8,8,0,0,1,24,88a7.89,7.89,0,0,1-4.79-1.61h0C18.05,85.54,8,77.61,8,64A32,32,0,0,1,40,32H176a32,32,0,0,1,32,32V168h8a8,8,0,0,1,4.8,1.6C222,170.46,232,178.39,232,192ZM96.26,173.48A8.07,8.07,0,0,1,104,168h88V64a16,16,0,0,0-16-16H67.69A31.71,31.71,0,0,1,72,64V192a16,16,0,0,0,32,0c0-5.74-4.83-9.62-4.88-9.66A7.82,7.82,0,0,1,96.26,173.48ZM216,192a12.58,12.58,0,0,0-3.23-8h-94a26.92,26.92,0,0,1,1.21,8,31.82,31.82,0,0,1-4.29,16H200A16,16,0,0,0,216,192Z',
   feather: 'M221.28,34.75a64,64,0,0,0-90.49,0L60.69,104A15.9,15.9,0,0,0,56,115.31v73.38L26.34,218.34a8,8,0,0,0,11.32,11.32L67.32,200H140.7A15.92,15.92,0,0,0,152,195.32l0,0,69.23-70A64,64,0,0,0,221.28,34.75ZM142.07,46.06A48,48,0,0,1,211.79,112H155.33l34.35-34.34a8,8,0,0,0-11.32-11.32L120,124.69V67.87ZM72,115.35l32-31.67v57l-32,32ZM140.7,184H83.32l56-56h56.74Z',
 }
-const path = computed(() => paths[props.name] ?? paths.stamp)
-</script>
-<template><svg :width="size ?? 18" :height="size ?? 18" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path :d="path" /></svg></template>
+
+export function StudioIcon({ name, size = 18 }: { name: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+      <path d={paths[name] ?? paths.stamp} />
+    </svg>
+  )
+}

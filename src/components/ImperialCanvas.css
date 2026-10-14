@@ -1,0 +1,26 @@
+.document { --roll-width: clamp(16px, 3.4cqw, 26px); position: relative; width: 100%; aspect-ratio: 3 / 2; filter: drop-shadow(0 18px 22px #0005); }
+.scroll-paper { position: absolute; inset: 0; clip-path: inset(0 0); transition: clip-path var(--scroll-duration) cubic-bezier(.65, 0, .25, 1); }
+.folded .scroll-paper { clip-path: inset(0 50%); }
+.document.targeting .scroll-paper { outline: 2px solid var(--ink); }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; touch-action: manipulation; }
+.folded canvas, .rolling canvas { pointer-events: none; }
+.scroll-roller { position: absolute; top: -10px; bottom: -10px; width: var(--roll-width); border-radius: 5px; z-index: 2; background: linear-gradient(90deg, #382717, #a2824d 35%, #dcc391 52%, #75532f 77%, #342419); box-shadow: 2px 3px 6px #0005; pointer-events: none; transition: left var(--scroll-duration) cubic-bezier(.65, 0, .25, 1), right var(--scroll-duration) cubic-bezier(.65, 0, .25, 1); }
+.roller-left { left: 0; transform: translateX(-50%); }
+.roller-right { right: 0; transform: translateX(50%); }
+.folded .roller-left { left: calc(50% - var(--roll-width) / 2); }
+.folded .roller-right { right: calc(50% - var(--roll-width) / 2); }
+.scroll-roller::before, .scroll-roller::after { content: ''; position: absolute; left: -2px; right: -2px; height: 7px; border-radius: 3px; background: linear-gradient(90deg, #49341d, #d1b26e 44%, #9c7338 74%, #3c2919); border-top: 1px solid #ead09780; }
+.scroll-roller::before { top: 3px; }.scroll-roller::after { bottom: 3px; }
+.roller-silk { position: absolute; inset: 13px 0; border-radius: 3px; background: linear-gradient(90deg, #0006, #0001 24%, #fff5 48%, #fff1 65%, #0004), var(--scroll-paper); box-shadow: inset 1px 0 2px #fff5, inset -2px 0 3px #0003; background-size: 100% 100%; transition: background-position var(--scroll-duration) ease; }
+.rolling .roller-silk { animation: turn-silk var(--scroll-duration) ease-in-out; }
+.roller-right .roller-silk { animation-direction: reverse; }
+.scroll-binding { position: absolute; z-index: 3; top: 29%; left: 50%; width: calc(var(--roll-width) * 2 + 12px); height: 42%; transform: translateX(-50%) scale(.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; border: 1px solid #d4aa6880; border-radius: 2px; background: linear-gradient(90deg, #8d633f, #c39b66 45%, #a4794d); box-shadow: 0 3px 8px #0005, inset 0 0 0 3px #d4b07b55; color: #38251b; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 180ms, transform 180ms, visibility 180ms; }
+.folded .scroll-binding { opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(-50%) scale(1); transition-delay: 480ms; }
+.scroll-binding:disabled { opacity: 1; }
+.binding-title { writing-mode: vertical-rl; letter-spacing: 5px; font: 18px var(--font-serif); }
+.binding-seal { display: grid; place-items: center; width: 24px; height: 24px; color: #a83827; border: 1px solid currentColor; font: 17px var(--font-serif); }
+.night-scroll .scroll-binding { background: linear-gradient(90deg, #283328, #485440 45%, #252e27); color: #ddc996; }
+.night-scroll .binding-seal { color: #d6b47a; }
+@keyframes turn-silk { 0% { background-size: 100% 100%; } 50% { background-size: 180% 100%; } 100% { background-size: 100% 100%; } }
+@media (max-width: 700px) { .document { --roll-width: 16px; }.scroll-binding { top: 22%; height: 56%; gap: 8px; }.binding-title { font-size: 14px; letter-spacing: 3px; }.binding-seal { width: 20px; height: 20px; font-size: 14px; } }
+@media (prefers-reduced-motion: reduce) { .scroll-paper, .scroll-roller, .scroll-binding { transition: none; }.roller-silk { animation: none !important; } }

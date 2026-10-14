@@ -1,0 +1,5 @@
+.app-layout { --shell-offset: 86px; }
+
+@media (min-width: 701px) and (max-width: 1200px) {
+  .app-layout { --shell-offset: 136px; }
+}

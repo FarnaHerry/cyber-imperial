@@ -1,4 +1,3 @@
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { DEFAULT_EDICT, randomEdict } from '../core/edict'
 import { INKS, type InkKey } from '../core/inks'
 import { PAPERS, type PaperKey } from '../core/paper'
@@ -14,6 +13,8 @@ export const TEMPLATES = [
   { key: 'holiday', label: '准予休沐', hint: '暂别案牍 · 山海相见', mark: '闲', create: (who: string) => `制曰：朕闻劳逸相济，方能行远。今准${who || '卿'}暂离案牍，休沐三日。\n\n其间无需应召，不必看群。可游山川，可卧听雨，可与亲友共饮。凡有急事，待归来再议。好好休息，钦此。` },
   { key: 'blank', label: '自由创作', hint: '一纸素笺 · 自由落笔', mark: '书', create: () => '' },
 ] as const
+
+export type StudioTemplate = typeof TEMPLATES[number]
 
 export interface StudioState extends EmpireState, MemorialState {
   text: string
@@ -36,6 +37,36 @@ export interface StudioState extends EmpireState, MemorialState {
   draws: DrawRecord[]
   avoidRepeat: boolean
 }
+
+export type SaveStatus = 'saved' | 'saving' | 'unavailable'
+
+export interface StudioSnapshot {
+  state: StudioState
+  saveStatus: SaveStatus
+  canUndo: boolean
+  canRedo: boolean
+}
+
+export interface StudioStore {
+  readonly restored: boolean
+  readonly state: StudioState
+  readonly saveStatus: SaveStatus
+  readonly canUndo: boolean
+  readonly canRedo: boolean
+  getSnapshot(): StudioSnapshot
+  subscribe(listener: () => void): () => void
+  /** 浅合并更新状态，并调度自动保存 */
+  set(patch: Partial<StudioState>): void
+  addStamp(stamp: Stamp): boolean
+  clear(): void
+  undo(): void
+  redo(): void
+  regenerate(): void
+  createFromTemplate(template: StudioTemplate): void
+  flip(): DrawRecord | null
+  dispose(): void
+}
+
 const STORAGE_KEY = 'cyber-imperial-studio:v2'
 const finite = (v: unknown, min: number, max: number): v is number => typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max
 const string = (v: unknown, max: number): v is string => typeof v === 'string' && Array.from(v).length <= max
@@ -72,13 +103,14 @@ function readDraft(): Partial<StudioState> | null {
       || !Array.isArray(d.members) || d.members.length > 24 || !d.members.every(validMember)
       || new Set(d.members.map((m: PalaceMember) => m.id)).size !== d.members.length
       || !Array.isArray(d.draws) || d.draws.length > 50 || !d.draws.every(validDraw) || typeof d.avoidRepeat !== 'boolean')) return null
-    return { ...d, ...restoreEmpire(s.version >= 4 ? d : undefined), ...restoreMemorials(s.version >= 5 ? d : undefined), stamps: d.stamps.map((stamp: Stamp) => ({ ...stamp, font: stamp.font ?? 'serif' })) }
+    return { ...d, ...restoreEmpire(s.version >= 4 ? d : undefined), ...restoreMemorials(s.version >= 5 ? d : undefined), stamps: d.stamps.map((stamp: Stamp) => ({ ...stamp, font: stamp.font ?? 'serif' })),
+      members: Array.isArray(d.members) ? d.members.map((m: PalaceMember) => ({ ...m, color: typeof m.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(m.color) ? m.color : undefined })) : d.members }
   } catch { return null }
 }
 
-export function useStudio() {
+export function createStudioStore(): StudioStore {
   const draft = readDraft()
-  const state = reactive<StudioState>({
+  let state: StudioState = {
     ...restoreEmpire(draft),
     ...restoreMemorials(draft),
     text: DEFAULT_EDICT, subject: '', sealText: '受命于天既寿永昌', inkKey: 'cinnabar',
@@ -86,62 +118,103 @@ export function useStudio() {
     theme: draft?.theme ?? 'dark', sealFont: draft?.sealFont ?? 'bird', edictFont: draft?.edictFont ?? 'brush',
     sealAngle: draft?.sealAngle ?? 0, kingdom: draft?.kingdom ?? '赛博', emperor: draft?.emperor ?? '',
     members: draft?.members ?? DEFAULT_MEMBERS.map(m => ({ ...m })), draws: draft?.draws ?? [], avoidRepeat: draft?.avoidRepeat ?? true,
-  })
+  }
   const restored = !!draft
-  const saveStatus = ref<'saved' | 'saving' | 'unavailable'>('saved')
-  const past = ref<Stamp[][]>([])
-  const future = ref<Stamp[][]>([])
-  const canUndo = computed(() => past.value.length > 0)
-  const canRedo = computed(() => future.value.length > 0)
-  const snapshot = () => state.stamps.map(s => ({ ...s }))
-  function commit(stamps: Stamp[]) {
-    past.value = [...past.value.slice(-49), snapshot()]
-    future.value = []
-    state.stamps = stamps
+  let saveStatus: SaveStatus = 'saved'
+  let past: Stamp[][] = []
+  let future: Stamp[][] = []
+  const listeners = new Set<() => void>()
+
+  const makeSnapshot = (): StudioSnapshot => ({ state, saveStatus, canUndo: past.length > 0, canRedo: future.length > 0 })
+  let snap = makeSnapshot()
+  function notify() {
+    snap = makeSnapshot()
+    for (const listener of listeners) listener()
   }
-  function undo() {
-    const stamps = past.value.pop()
-    if (!stamps) return
-    future.value.push(snapshot())
-    state.stamps = stamps
-  }
-  function redo() {
-    const stamps = future.value.pop()
-    if (!stamps) return
-    past.value.push(snapshot())
-    state.stamps = stamps
-  }
-  function addStamp(stamp: Stamp): boolean {
-    if (state.stamps.length >= 500) return false
-    commit([...state.stamps, stamp])
-    return true
-  }
-  function clear() { if (state.stamps.length) commit([]) }
-  function regenerate() { state.text = royalEdict(randomEdict(state.subject), state.kingdom, state.emperor) }
-  function createFromTemplate(template: typeof TEMPLATES[number]) {
-    state.text = royalEdict(template.create(state.subject.trim()), state.kingdom, state.emperor)
-  }
-  function flip(): DrawRecord | null {
-    const member = drawPalaceMember(state.members, state.avoidRepeat ? state.draws[0]?.memberId : undefined)
-    if (!member) return null
-    const record: DrawRecord = { id: crypto.randomUUID(), memberId: member.id, name: member.name, title: member.title, palace: member.palace, at: new Date().toISOString() }
-    state.draws = [record, ...state.draws].slice(0, 50)
-    return record
-  }
+
   let timer: ReturnType<typeof setTimeout> | undefined
   function save() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 5, state }))
-      saveStatus.value = 'saved'
-    } catch { saveStatus.value = 'unavailable' }
+      saveStatus = 'saved'
+    } catch { saveStatus = 'unavailable' }
+    notify()
   }
-  watch(state, () => {
-    saveStatus.value = 'saving'
+
+  const store: StudioStore = {
+    restored,
+    get state() { return state },
+    get saveStatus() { return saveStatus },
+    get canUndo() { return past.length > 0 },
+    get canRedo() { return future.length > 0 },
+    getSnapshot: () => snap,
+    subscribe(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    set(patch) {
+      state = { ...state, ...patch }
+      saveStatus = 'saving'
+      clearTimeout(timer)
+      timer = setTimeout(save, 400)
+      notify()
+    },
+    addStamp(stamp) {
+      if (state.stamps.length >= 500) return false
+      commit([...state.stamps, stamp])
+      return true
+    },
+    clear() { if (state.stamps.length) commit([]) },
+    undo() {
+      const stamps = past.pop()
+      if (!stamps) return
+      future.push(snapshot())
+      commitState(stamps)
+    },
+    redo() {
+      const stamps = future.pop()
+      if (!stamps) return
+      past.push(snapshot())
+      commitState(stamps)
+    },
+    regenerate() { store.set({ text: royalEdict(randomEdict(state.subject), state.kingdom, state.emperor) }) },
+    createFromTemplate(template) {
+      store.set({ text: royalEdict(template.create(state.subject.trim()), state.kingdom, state.emperor) })
+    },
+    flip() {
+      const member = drawPalaceMember(state.members, state.avoidRepeat ? state.draws[0]?.memberId : undefined)
+      if (!member) return null
+      const record: DrawRecord = { id: crypto.randomUUID(), memberId: member.id, name: member.name, title: member.title, palace: member.palace, at: new Date().toISOString() }
+      store.set({ draws: [record, ...state.draws].slice(0, 50) })
+      return record
+    },
+    dispose() {
+      clearTimeout(timer)
+      save()
+      window.removeEventListener('pagehide', save)
+    },
+  }
+
+  const snapshot = () => state.stamps.map(s => ({ ...s }))
+  function commitState(stamps: Stamp[]) {
+    state = { ...state, stamps }
+    saveStatus = 'saving'
     clearTimeout(timer)
     timer = setTimeout(save, 400)
-  }, { deep: true })
-  onBeforeUnmount(() => { clearTimeout(timer); save(); window.removeEventListener('pagehide', save) })
+    notify()
+  }
+  function commit(stamps: Stamp[]) {
+    past = [...past.slice(-49), snapshot()]
+    future = []
+    commitState(stamps)
+  }
+
   window.addEventListener('pagehide', save)
   save()
-  return { state, restored, saveStatus, canUndo, canRedo, addStamp, undo, redo, clear, regenerate, createFromTemplate, flip }
+  return store
+}
+
+let shared: StudioStore | undefined
+export function getStudioStore(): StudioStore {
+  return shared ??= createStudioStore()
 }
