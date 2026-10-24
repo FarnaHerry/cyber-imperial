@@ -2,6 +2,8 @@
 
 一款在浏览器中创作诏书与印章的本地工作台。Vue 3 + TypeScript + Canvas 2D，无 UI 库、图片或音频素材；宣纸纹理、印面磨损与落印音效均实时生成。
 
+在线体验：https://farnaherry.github.io/cyber-imperial/
+
 ## 运行
 
 需要 Node.js 22+、pnpm 12。
