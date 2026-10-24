@@ -125,37 +125,38 @@ function restoreDraft() {
 </template>
 
 <style scoped>
-.memorial-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+.memorial-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
 .memorial-stats button { display: grid; grid-template-columns: 1fr auto; gap: 9px; text-align: left; color: var(--text); }
-.memorial-stats button[aria-pressed='true'] { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.memorial-stats button:hover { border-color: var(--accent-border); background: var(--accent-soft); }
+.memorial-stats button[aria-pressed='true'] { color: var(--accent-strong); background: var(--panel-raised); border-color: var(--accent-border); box-shadow: var(--shadow-sm); }
+.memorial-stats button[aria-pressed='true']:hover { background: var(--panel-raised); }
 .memorial-stats span { font: 16px var(--font-serif); letter-spacing: 2px; }
-.memorial-stats strong { grid-row: span 2; font: 32px var(--font-serif); color: var(--accent); }
+.memorial-stats strong { grid-row: span 2; font: 32px var(--font-serif); color: var(--accent-strong); }
 .memorial-stats small { color: var(--muted); font-size: 10px; }
 .memorial-toolbar { gap: 10px; }
 .memorial-toolbar .text-input { flex: 1; min-width: 200px; }
-.memorial-workspace { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 22px; align-items: start; }
+.memorial-workspace { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 24px; align-items: start; }
 .register-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
 .register-heading h2, .register-heading h3 { margin: 0; font: 17px var(--font-serif); letter-spacing: 2px; }
 .register-heading span { color: var(--muted); font-size: 10px; }
 .memorial-list { padding: 20px 0 0; overflow: hidden; }
 .memorial-list .register-heading { padding: 0 20px; }
 .memorial-entry { display: grid; gap: 10px; width: 100%; padding: 20px; text-align: left; color: var(--text); background: transparent; border: 0; border-top: 1px solid var(--line); border-left: 3px solid transparent; overflow-wrap: anywhere; }
-.memorial-entry[aria-pressed='true'] { background: color-mix(in srgb, var(--accent) 7%, transparent); border-left-color: var(--accent); }
+.memorial-entry:hover { background: var(--accent-soft); }
+.memorial-entry[aria-pressed='true'] { background: var(--accent-soft); border-left-color: var(--accent); }
 .memorial-entry strong { font: 17px var(--font-serif); line-height: 1.6; }
-.entry-meta { display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--accent); }
+.entry-meta { display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--accent-strong); }
 .entry-meta b { font-weight: 400; margin-left: 8px; color: var(--vermillion); }
 .entry-author, .memorial-entry small { font-size: 11px; color: var(--muted); }
-.memorial-detail { padding: 32px; --vermillion: #df8974; }
-.memorial-workspace { --vermillion: #df8974; }
 .memorial-heading { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
 .memorial-heading h2 { margin: 15px 0 10px; font: 26px var(--font-serif); line-height: 1.7; overflow-wrap: anywhere; }
 .memorial-heading p { margin: 0; font-size: 12px; color: var(--muted); }
 .urgent { color: var(--vermillion); border-color: color-mix(in srgb, var(--vermillion) 35%, transparent); }
-.memorial-body { white-space: pre-wrap; overflow-wrap: anywhere; font: 16px / 2.3 var(--font-serif); padding: 26px 0; margin: 24px 0 0; border-top: 1px solid var(--line); }
+.memorial-body { white-space: pre-wrap; overflow-wrap: anywhere; font: 16px / 2.3 var(--font-serif); padding: 26px 0; margin: 24px 0 0; border-top: 1px solid var(--line-strong); }
 .memorial-dates { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 10px; margin-bottom: 22px; }
 .memorial-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
 .remove-draft { margin-left: auto; }
-.review-panel, .review-history { border-top: 1px solid var(--line); padding-top: 24px; margin-top: 24px; }
+.review-panel, .review-history { border-top: 1px solid var(--line-strong); padding-top: 24px; margin-top: 24px; }
 .review-panel h3 { font: 20px var(--font-serif); color: var(--vermillion); margin: 12px 0 20px; letter-spacing: 3px; }
 .review-panel label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 10px; }
 .review-panel label span { color: var(--muted); font-size: 10px; }
@@ -163,6 +164,7 @@ function restoreDraft() {
 .review-shortcuts { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 10px; }
 .review-shortcuts span { color: var(--muted); font-size: 10px; }
 .approval-button { background: var(--vermillion); color: #261b17; }
+.approval-button:hover:not(:disabled) { background: color-mix(in srgb, var(--vermillion) 85%, var(--panel-raised)); box-shadow: var(--shadow-sm); }
 .review-history ol { list-style: none; padding: 0; margin: 0; }
 .review-history li { border-left: 2px solid color-mix(in srgb, var(--vermillion) 40%, transparent); padding: 0 0 0 16px; margin: 20px 0; }
 .review-meta { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -174,11 +176,20 @@ function restoreDraft() {
 .management-form .urgency-control { display: flex; align-items: center; gap: 8px; padding-top: 20px; }
 .urgency-control input { accent-color: var(--accent); }
 .empty-compose { margin: 16px auto 0; }
-:global([data-theme='light']) .memorial-workspace, :global([data-theme='light']) .memorial-detail { --vermillion: #a34430; }
 :global([data-theme='light']) .approval-button { color: #fff8ed; }
-@media (max-width: 900px) { .memorial-workspace { grid-template-columns: 245px minmax(0, 1fr); gap: 16px; }.memorial-detail { padding: 24px; } }
+@media (max-width: 900px) { .memorial-workspace { grid-template-columns: 245px minmax(0, 1fr); gap: 16px; } }
 @media (max-width: 700px) {
-  .memorial-stats { gap: 8px; }.memorial-stats button { padding: 14px 10px; gap: 6px; }.memorial-stats span { font-size: 13px; letter-spacing: 1px; }.memorial-stats strong { font-size: 25px; }
-  .memorial-workspace { grid-template-columns: 1fr; }.memorial-list { max-height: 340px; overflow-y: auto; }.memorial-entry { padding: 16px; gap: 7px; }.memorial-heading h2 { font-size: 22px; }.memorial-heading { flex-wrap: wrap; }.memorial-detail { padding: 20px; }.memorial-body { font-size: 15px; }.memorial-toolbar .text-input { flex-basis: 100%; }.memorial-actions .button { padding: 0 12px; }
+  .memorial-stats { gap: 10px; }
+  .memorial-stats button { grid-template-columns: 1fr; padding: 14px 12px; gap: 7px; }
+  .memorial-stats span { font-size: 13px; letter-spacing: 1px; }
+  .memorial-stats strong { grid-row: auto; font-size: 25px; }
+  .memorial-workspace { grid-template-columns: 1fr; }
+  .memorial-list { max-height: 340px; overflow-y: auto; }
+  .memorial-entry { padding: 16px; gap: 7px; }
+  .memorial-heading { flex-wrap: wrap; }
+  .memorial-heading h2 { font-size: 22px; }
+  .memorial-body { font-size: 15px; }
+  .memorial-toolbar .text-input { flex-basis: 100%; }
+  .memorial-actions .button { padding: 0 12px; }
 }
 </style>

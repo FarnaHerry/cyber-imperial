@@ -29,7 +29,47 @@ function submit() {
   </EmpirePage>
 </template>
 <style scoped>
-.map-summary { color: var(--muted); font-size: 12px; }.palace-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }.map-panel { padding: 15px; }.palace-map { display: block; width: 100%; height: auto; }.map-ground { fill: color-mix(in srgb, var(--accent) 3%, var(--panel)); }.map-grid-line { stroke: var(--line); stroke-width: .5; }.palace-wall { fill: none; stroke: var(--accent); stroke-width: 3; opacity: .5; }.inner-court { fill: color-mix(in srgb, var(--accent) 3%, transparent); stroke: var(--line); }.palace-axis { fill: none; stroke: var(--accent); opacity: .2; stroke-width: 12; }.palace-path { fill: none; stroke: var(--accent); opacity: .15; stroke-width: 3; }.map-direction, .zone-label { fill: var(--muted); font: 13px var(--font-serif); letter-spacing: 2px; }.garden-trees { fill: color-mix(in srgb, var(--muted) 10%, transparent); stroke: var(--muted); stroke-width: 1; opacity: .6; }.map-hall { cursor: pointer; outline: none; transition: opacity .2s; }.map-hall.dimmed { opacity: .25; }.hall-courtyard { fill: var(--panel); stroke: var(--line); }.hall-roof { fill: color-mix(in srgb, var(--accent) 16%, var(--panel)); stroke: var(--accent); stroke-width: 1.2; }.roof-lines, .hall-steps { fill: none; stroke: var(--accent); opacity: .5; }.hall-body { fill: var(--panel); stroke: var(--accent); opacity: .85; }.map-hall text { fill: var(--text); font-family: var(--font-serif); letter-spacing: 2px; pointer-events: none; }.map-hall.selected .hall-courtyard, .map-hall:focus-visible .hall-courtyard { stroke: var(--accent); stroke-width: 3; }.map-hall.selected .hall-roof, .map-hall:hover .hall-roof { fill: color-mix(in srgb, var(--accent) 40%, var(--panel)); }.map-footnote { color: var(--muted); font-size: 10px; text-align: center; margin: 8px 0 10px; letter-spacing: 1px; }.hall-sidebar { display: grid; gap: 20px; }.hall-details h2 { font: 26px var(--font-serif); margin: 20px 0 12px; letter-spacing: 4px; overflow-wrap: anywhere; }.hall-details > p { color: var(--muted); font-size: 12px; line-height: 1.9; margin-bottom: 24px; overflow-wrap: anywhere; }.hall-link { margin-top: 19px; }.hall-directory h3 { font: 16px var(--font-serif); margin: 0 0 16px; letter-spacing: 3px; }.hall-directory button { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid var(--line); color: var(--text); background: none; font: 12px var(--font-serif); text-align: left; }.hall-directory button[aria-pressed='true'] { color: var(--accent); }.hall-directory small { color: var(--muted); font: 9px var(--font-sans); white-space: nowrap; }
-@media (max-width: 900px) { .palace-layout { grid-template-columns: 1fr; }.hall-sidebar { grid-template-columns: 1fr 1fr; align-items: start; } }
-@media (max-width: 600px) { .hall-sidebar { grid-template-columns: 1fr; }.map-panel { padding: 4px; }.map-footnote { font-size: 9px; }.management-summary { line-height: 1.8; } }
+.map-summary { color: var(--muted); font-size: 12px; }
+.palace-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
+.map-panel { padding: 24px; background: var(--panel-soft); box-shadow: var(--shadow-sm); }
+.palace-map { display: block; width: 100%; height: auto; }
+.map-ground { fill: color-mix(in srgb, var(--accent) 3%, var(--panel)); }
+.map-grid-line { stroke: var(--line); stroke-width: .5; }
+.palace-wall { fill: none; stroke: var(--accent); stroke-width: 3; opacity: .5; }
+.inner-court { fill: color-mix(in srgb, var(--accent) 3%, transparent); stroke: var(--line); }
+.palace-axis { fill: none; stroke: var(--accent); opacity: .2; stroke-width: 12; }
+.palace-path { fill: none; stroke: var(--accent); opacity: .15; stroke-width: 3; }
+.map-direction, .zone-label { fill: var(--muted); font: 13px var(--font-serif); letter-spacing: 2px; }
+.garden-trees { fill: color-mix(in srgb, var(--muted) 10%, transparent); stroke: var(--muted); stroke-width: 1; opacity: .6; }
+.map-hall { cursor: pointer; outline: none; transition: opacity .2s; }
+.map-hall.dimmed { opacity: .25; }
+.hall-courtyard { fill: var(--panel); stroke: var(--line); }
+.hall-roof { fill: color-mix(in srgb, var(--accent) 16%, var(--panel)); stroke: var(--accent); stroke-width: 1.2; }
+.roof-lines, .hall-steps { fill: none; stroke: var(--accent); opacity: .5; }
+.hall-body { fill: var(--panel); stroke: var(--accent); opacity: .85; }
+.map-hall text { fill: var(--text); font-family: var(--font-serif); letter-spacing: 2px; pointer-events: none; }
+.map-hall.selected .hall-courtyard, .map-hall:focus-visible .hall-courtyard { stroke: var(--accent); stroke-width: 3; }
+.map-hall.selected .hall-roof, .map-hall:hover .hall-roof { fill: color-mix(in srgb, var(--accent) 40%, var(--panel)); }
+.map-footnote { color: var(--muted); font-size: 10px; text-align: center; margin: 8px 0 10px; letter-spacing: 1px; }
+.hall-sidebar { display: grid; gap: 24px; }
+.hall-details { background: var(--panel-raised); border-color: var(--line-strong); }
+.hall-details h2 { font: 26px var(--font-serif); margin: 20px 0 12px; letter-spacing: 4px; overflow-wrap: anywhere; }
+.hall-details > p { color: var(--muted); font-size: 12px; line-height: 1.9; margin-bottom: 24px; overflow-wrap: anywhere; }
+.hall-link { margin-top: 19px; }
+.hall-directory { background: var(--panel-soft); border-color: var(--line-strong); }
+.hall-directory h3 { font: 16px var(--font-serif); margin: 0 0 16px; letter-spacing: 3px; }
+.hall-directory button { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 11px 0; border: 0; border-bottom: 1px solid var(--line); color: var(--text); background: none; font: 12px var(--font-serif); text-align: left; }
+.hall-directory button:hover { color: var(--accent-strong); }
+.hall-directory button[aria-pressed='true'] { color: var(--accent-strong); }
+.hall-directory small { color: var(--muted); font: 9px var(--font-sans); white-space: nowrap; }
+@media (max-width: 900px) {
+  .palace-layout { grid-template-columns: 1fr; }
+  .hall-sidebar { grid-template-columns: 1fr 1fr; align-items: start; }
+}
+@media (max-width: 700px) {
+  .hall-sidebar { grid-template-columns: 1fr; }
+  .map-panel { padding: 18px; }
+  .map-footnote { font-size: 9px; }
+  .management-summary { line-height: 1.8; }
+}
 </style>

@@ -75,10 +75,28 @@ function submitStock() {
 </template>
 <style scoped>
 .vaults { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
-.vault.royal { border-color: color-mix(in srgb, var(--accent) 32%, transparent); background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 4%, var(--panel)), var(--panel)); }
-.vault-heading { display: flex; align-items: center; gap: 16px; }.vault-heading h2 { font: 22px var(--font-serif); letter-spacing: 4px; margin: 7px 0 0; }.vault-mark { font: 27px var(--font-serif); color: var(--accent); border: 1px solid var(--line); display: grid; place-items: center; width: 50px; height: 50px; }.royal .vault-mark { border-color: var(--accent); }.vault-count { margin-left: auto; color: var(--muted); font-size: 11px; }.vault-rule { color: var(--muted); font-size: 11px; margin: 20px 0; line-height: 1.8; }
-.treasure-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }.treasure { padding: 15px; border: 1px solid var(--line); border-radius: var(--radius); }.treasure-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }.treasure h3 { font: 17px var(--font-serif); margin: 15px 0 8px; overflow-wrap: anywhere; }.treasure-note { color: var(--muted); font-size: 10px; line-height: 1.8; min-height: 36px; margin: 0 0 20px; overflow-wrap: anywhere; }.treasure-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }.treasure-quantity { font-size: 10px; color: var(--muted); }.treasure-quantity b { font: 19px var(--font-serif); color: var(--text); }.treasure-bottom > div { display: flex; gap: 12px; }
-.stock-history { margin-top: 24px; }.stock-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 12px; }.stock-heading h2 { font: 17px var(--font-serif); margin: 0; letter-spacing: 3px; }.stock-delta { white-space: nowrap; }.management-table time { white-space: nowrap; color: var(--muted); font-size: 10px; }
+.vault { border-color: var(--line-strong); background: var(--panel-soft); }
+.vault.royal { border-color: var(--accent-border); background: linear-gradient(145deg, var(--panel-raised), var(--panel-soft)); }
+.vault-heading { display: flex; align-items: center; gap: 16px; }
+.vault-heading h2 { font: 22px var(--font-serif); letter-spacing: 4px; margin: 7px 0 0; }
+.vault-mark { font: 27px var(--font-serif); color: var(--accent-strong); border: 1px solid var(--line-strong); background: var(--panel-raised); display: grid; place-items: center; width: 50px; height: 50px; flex: none; }
+.royal .vault-mark { border-color: var(--accent-border); }
+.vault-count { margin-left: auto; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.vault-rule { color: var(--muted); font-size: 11px; margin: 20px 0; line-height: 1.8; }
+.treasure-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; border-top: 1px solid var(--line-strong); }
+.treasure { min-width: 0; padding: 18px 2px; border-bottom: 1px solid var(--line); }
+.treasure-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.treasure h3 { font: 17px var(--font-serif); margin: 13px 0 7px; overflow-wrap: anywhere; }
+.treasure-note { color: var(--muted); font-size: 10px; line-height: 1.8; min-height: 36px; margin: 0 0 16px; overflow-wrap: anywhere; }
+.treasure-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+.treasure-quantity { font-size: 10px; color: var(--muted); }
+.treasure-quantity b { font: 19px var(--font-serif); color: var(--accent-strong); }
+.treasure-bottom > div { display: flex; gap: 12px; }
+.stock-history { margin-top: 24px; }
+.stock-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 12px; }
+.stock-heading h2 { font: 17px var(--font-serif); margin: 0; letter-spacing: 3px; }
+.stock-delta { white-space: nowrap; }
+.management-table time { white-space: nowrap; color: var(--muted); font-size: 10px; }
 @media (max-width: 1000px) { .vaults { grid-template-columns: 1fr; } }
 @media (max-width: 480px) { .treasure-list { grid-template-columns: 1fr; } }
 </style>

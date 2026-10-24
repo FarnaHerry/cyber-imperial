@@ -49,8 +49,24 @@ function showRank(key: string, role: OfficialRole) { rankFilter.value = key; rol
   <dialog ref="titleEditor" class="help-dialog management-dialog" aria-labelledby="rank-title" @click="$event.target === titleEditor && titleEditor?.close()"><button class="icon-button dialog-close" aria-label="关闭职名设置" @click="titleEditor?.close()"><StudioIcon name="close" /></button><span class="eyebrow">RANK TITLES</span><h2 id="rank-title">{{ rankByKey(editingRank).label }} · 文武职名</h2><form class="management-form" @submit.prevent="submitTitles"><label>文官职名<input v-model="titleForm.civil" class="text-input" maxlength="24" required /></label><label>武官职名<input v-model="titleForm.military" class="text-input" maxlength="24" required /></label><p class="field-note">职名修改会同步至该品级官员，品级顺序固定。</p><p v-if="titleError" class="overflow-warning" role="alert">{{ titleError }}</p><div class="management-form-actions"><button class="button management-primary" type="submit">保存职名</button></div></form></dialog>
 </template>
 <style scoped>
-.court-count { color: var(--muted); font-size: 12px; white-space: nowrap; }.court-view { margin-bottom: 24px; }.rank-intro { display: flex; gap: 20px; flex-wrap: wrap; align-items: baseline; margin-bottom: 14px; }.rank-intro h2 { font: 18px var(--font-serif); margin: 0; letter-spacing: 2px; }.rank-intro p { font-size: 11px; color: var(--muted); line-height: 1.9; margin: 0; }.rank-table { min-width: 560px; }.rank-table td { padding-top: 14px; padding-bottom: 14px; }.rank-order { font: 9px var(--font-sans); color: var(--muted); margin-right: 16px; }.rank-count { background: none; border: 0; color: var(--accent); margin-left: 18px; padding: 0; font-size: 10px; }.officer-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }.officer-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }.officer-office { display: block; color: var(--accent); font: 13px var(--font-serif); letter-spacing: 2px; margin-top: 24px; overflow-wrap: anywhere; }.officer-card h2 { font: 25px var(--font-serif); letter-spacing: 4px; margin: 12px 0; overflow-wrap: anywhere; }.officer-card p { font-size: 11px; color: var(--muted); line-height: 1.9; min-height: 42px; overflow-wrap: anywhere; }.officer-card > .text-button { margin-top: 15px; }
-@media (max-width: 1100px) { .officer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.court-count { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.court-view { margin-bottom: 24px; }
+.rank-intro { display: flex; gap: 20px; flex-wrap: wrap; align-items: baseline; margin-bottom: 14px; }
+.rank-intro h2 { font: 18px var(--font-serif); margin: 0; letter-spacing: 2px; }
+.rank-intro p { font-size: 11px; color: var(--muted); line-height: 1.9; margin: 0; }
+.rank-table { min-width: 560px; }
+.rank-table td { padding-top: 14px; padding-bottom: 14px; }
+.rank-order { font: 9px var(--font-sans); color: var(--muted); margin-right: 16px; }
+.rank-count { background: none; border: 0; color: var(--accent-strong); margin-left: 18px; padding: 0; font-size: 10px; }
+.officer-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.officer-card { display: flex; flex-direction: column; min-height: 250px; border-color: var(--line-strong); background: var(--panel-soft); transition: border-color .18s, background .18s, box-shadow .18s, transform .18s; }
+.officer-card:hover { border-color: var(--accent-border); background: var(--panel-raised); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+.officer-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.officer-office { display: block; color: var(--accent-strong); font: 13px var(--font-serif); letter-spacing: 2px; margin-top: 22px; overflow-wrap: anywhere; }
+.officer-card h2 { font: 25px var(--font-serif); letter-spacing: 4px; margin: 12px 0; overflow-wrap: anywhere; }
+.officer-card p { font-size: 11px; color: var(--muted); line-height: 1.9; min-height: 42px; margin: 0 0 18px; overflow-wrap: anywhere; }
+.officer-card > .text-button { align-self: flex-start; margin-top: auto; }
+@media (max-width: 1100px) { .officer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } }
 @media (max-width: 850px) { .officer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 480px) { .officer-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .officer-grid { grid-template-columns: 1fr; } .officer-card { min-height: 0; } }
 </style>

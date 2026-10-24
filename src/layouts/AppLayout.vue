@@ -46,21 +46,22 @@ const help = computed(() => ({
 
 <style scoped>
 .app-layout { --shell-offset: 86px; height: 100dvh; min-height: 480px; display: flex; flex-direction: column; }
-.topbar { height: 86px; flex: none; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 30px; border-bottom: 1px solid var(--line); }
+.topbar { position: relative; z-index: 2; height: 86px; flex: none; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 30px; border-bottom: 1px solid var(--line-strong); background: linear-gradient(90deg, var(--panel-soft), var(--panel) 50%, var(--panel-soft)); box-shadow: var(--shadow-sm); }
+.topbar::after { content: ''; position: absolute; left: 50%; bottom: -1px; width: min(360px, 38vw); height: 1px; transform: translateX(-50%); background: linear-gradient(90deg, transparent, var(--accent-border), transparent); pointer-events: none; }
 .brand { display: flex; align-items: center; padding: 0; border: 0; background: transparent; color: inherit; }
-.brand-mark { font-family: var(--font-serif); font-size: 29px; display: grid; place-items: center; height: 43px; width: 43px; border: 1px solid #c58566; color: #e9ac8c; position: relative; transition: background .18s, box-shadow .18s; }
-.brand:hover .brand-mark { background: #c5856612; box-shadow: 0 0 20px #c5856614; }
-.brand-mark::after { content: ''; position: absolute; inset: 3px; border: 1px solid #c5856645; pointer-events: none; }
-.header-actions { display: flex; align-items: center; gap: 18px; }
-.nav-drawer { position: fixed; inset: 0 auto 0 0; margin: 0; width: 292px; max-width: 86vw; height: 100dvh; max-height: 100dvh; padding: 40px 26px; border: 0; border-right: 1px solid #c5856640; border-radius: 0; background: var(--panel); color: var(--text); box-shadow: 24px 0 70px #0004; }
+.brand-mark { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--accent-border); background: var(--accent-soft); color: var(--vermillion); font: 29px var(--font-serif); box-shadow: var(--shadow-sm); transition: background .18s, border-color .18s, box-shadow .18s; }
+.brand:hover .brand-mark { border-color: var(--accent); background: var(--panel-raised); box-shadow: 0 0 0 4px var(--accent-soft); }
+.brand-mark::after { content: ''; position: absolute; inset: 3px; border: 1px solid var(--line-strong); pointer-events: none; }
+.header-actions { display: flex; align-items: center; gap: 8px; min-height: var(--control-height); padding: 3px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-soft); }
+.nav-drawer { position: fixed; inset: 0 auto 0 0; margin: 0; width: 292px; max-width: 86vw; height: 100dvh; max-height: 100dvh; padding: 40px 26px; border: 0; border-right: 1px solid var(--accent-border); border-radius: 0; background: var(--panel); color: var(--text); box-shadow: var(--shadow-lg); }
 .nav-drawer[open] { display: flex; flex-direction: column; animation: drawer-enter .22s ease-out; }
-.nav-drawer::backdrop { background: #080d0bb8; backdrop-filter: blur(3px); animation: backdrop-enter .22s ease-out; }
+.nav-drawer::backdrop { background: color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter: blur(3px); animation: backdrop-enter .22s ease-out; }
 .drawer-close { position: absolute; top: 20px; right: 18px; }
 .nav-drawer h2 { margin: 15px 0 28px; font: 400 24px var(--font-serif); letter-spacing: 3px; }
 .page-nav { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
 .page-nav a { padding: 14px 16px; color: var(--muted); font-size: 13px; letter-spacing: 2px; text-decoration: none; border: 1px solid transparent; border-radius: var(--radius); }
-.page-nav a:hover { color: var(--text); background: #ffffff06; }
-.page-nav a[aria-current='page'] { color: var(--accent); background: #c69f760a; border-color: #c69f762f; }
+.page-nav a:hover { color: var(--text); background: var(--accent-soft); }
+.page-nav a[aria-current='page'] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-border); }
 .layout-content { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 @keyframes drawer-enter { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 @keyframes backdrop-enter { from { opacity: 0; } to { opacity: 1; } }
@@ -70,8 +71,8 @@ const help = computed(() => ({
 }
 @media (max-width: 700px) {
 .topbar { height: 74px; padding: 0 16px; gap: 10px; }
-.brand-mark { width: 35px; height: 35px; font-size: 24px; }
-.header-actions { gap: 6px; }
+.brand-mark { width: 36px; height: 36px; font-size: 24px; }
+.header-actions { gap: 4px; padding: 2px; }
 .help-button { width: 27px; }
 .theme-button { width: 26px; }
 .help-button { display: none; }
